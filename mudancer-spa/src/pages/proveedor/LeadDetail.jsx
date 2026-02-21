@@ -95,30 +95,52 @@ export default function LeadDetail() {
         <section className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Origen</h2>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-            <dt className="text-gray-500">Estado</dt><dd>{lead.estado_origen}</dd>
-            <dt className="text-gray-500">Localidad</dt><dd>{lead.localidad_origen}</dd>
-            <dt className="text-gray-500">Colonia</dt><dd>{lead.colonia_origen}</dd>
-            <dt className="text-gray-500">Piso / niveles</dt><dd>{lead.piso_origen || "—"}</dd>
+            <dt className="text-gray-500">Estado</dt><dd>{lead.estado_origen || "—"}</dd>
+            <dt className="text-gray-500">Localidad</dt><dd>{lead.localidad_origen || "—"}</dd>
+            <dt className="text-gray-500">Colonia / Fracc.</dt><dd>{lead.colonia_origen || "—"}</dd>
+            <dt className="text-gray-500">Piso / Nivel</dt><dd>{lead.piso_origen || "—"}</dd>
+            <dt className="text-gray-500">Elevador</dt><dd>{lead.elevador_origen ? "Sí" : "No"}</dd>
+            <dt className="text-gray-500">Acarreo</dt><dd>{lead.acarreo_origen || "Hasta 30 mts."}</dd>
           </dl>
         </section>
 
         <section className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Destino</h2>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-            <dt className="text-gray-500">Estado</dt><dd>{lead.estado_destino}</dd>
-            <dt className="text-gray-500">Localidad</dt><dd>{lead.localidad_destino}</dd>
-            <dt className="text-gray-500">Colonia</dt><dd>{lead.colonia_destino}</dd>
-            <dt className="text-gray-500">Piso / niveles</dt><dd>{lead.piso_destino || "—"}</dd>
+            <dt className="text-gray-500">Estado</dt><dd>{lead.estado_destino || "—"}</dd>
+            <dt className="text-gray-500">Localidad</dt><dd>{lead.localidad_destino || "—"}</dd>
+            <dt className="text-gray-500">Colonia / Fracc.</dt><dd>{lead.colonia_destino || "—"}</dd>
+            <dt className="text-gray-500">Piso / Nivel</dt><dd>{lead.piso_destino || "—"}</dd>
+            <dt className="text-gray-500">Elevador</dt><dd>{lead.elevador_destino ? "Sí" : "No"}</dd>
+            <dt className="text-gray-500">Acarreo</dt><dd>{lead.acarreo_destino || "Hasta 30 mts."}</dd>
           </dl>
         </section>
 
         <section className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Detalles</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Detalles del Servicio</h2>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-            <dt className="text-gray-500">Fecha recolección</dt><dd>{formatDate(lead.fecha_recoleccion)}</dd>
-            <dt className="text-gray-500">Empaque</dt><dd>{lead.empaque || "—"}</dd>
+            <dt className="text-gray-500">Fecha de recolección</dt><dd>{formatDate(lead.fecha_recoleccion)}</dd>
+            <dt className="text-gray-500">Fecha de llegada a destino</dt><dd>{lead.fecha_entrega ? formatDate(lead.fecha_entrega) : lead.tiempo_estimado || "Acordar"}</dd>
             <dt className="text-gray-500">Modalidad</dt><dd>{lead.modalidad || "—"}</dd>
-            <dt className="text-gray-500">Inventario</dt><dd className="sm:col-span-2">{lead.inventario || "—"}</dd>
+            <dt className="text-gray-500">Empaque</dt><dd>{lead.empaque || "—"}</dd>
+            {lead.seguro ? (
+              <>
+                <dt className="text-gray-500">Valor declarado (seguro)</dt>
+                <dd className="font-semibold text-blue-700">${Number(lead.seguro).toLocaleString("es-MX", { minimumFractionDigits: 2 })}</dd>
+              </>
+            ) : null}
+            {lead.inventario && (
+              <>
+                <dt className="text-gray-500">Inventario</dt>
+                <dd className="sm:col-span-2 whitespace-pre-line">{lead.inventario}</dd>
+              </>
+            )}
+            {lead.articulos_delicados && (
+              <>
+                <dt className="text-gray-500">Artículos delicados / especiales</dt>
+                <dd className="sm:col-span-2">{lead.articulos_delicados}</dd>
+              </>
+            )}
             {lead.observaciones && (
               <>
                 <dt className="text-gray-500">Observaciones</dt>
@@ -127,6 +149,13 @@ export default function LeadDetail() {
             )}
           </dl>
         </section>
+
+        {/* Already quoted badge */}
+        {lead.my_quotes_count > 0 && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 font-medium">
+            ✓ Ya enviaste {lead.my_quotes_count} cotización{lead.my_quotes_count > 1 ? "es" : ""} para este lead.
+          </div>
+        )}
 
         <section className="bg-white rounded-xl border border-gray-200 p-4 md:p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Cotizar</h2>

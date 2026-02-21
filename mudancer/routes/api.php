@@ -11,6 +11,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('webhook/wpforms', [LeadController::class, 'receiveFromWPForms']);
 
+// Public shareable PDF — no auth, protected by 32-char random token
+Route::get('pdf/share/{token}/{type}', [PdfController::class, 'publicPdf']);
+
+// Public lead link resolver — used by the deep-link redirect page
+Route::get('leads/link/{leadId}/{token}', [ProveedorController::class, 'resolveLink']);
+
 Route::prefix('cliente')->group(function () {
     Route::post('login', [ClienteController::class, 'login']);
     Route::put('quotes/{quote}/seleccionar', [ClienteController::class, 'seleccionar']);
@@ -32,6 +38,7 @@ Route::prefix('admin')->group(function () {
         Route::post('quotes/{quote}/asignar', [AdminLeadController::class, 'assignQuote']);
         Route::post('quotes/{quote}/marcar-pago', [AdminLeadController::class, 'marcarPago']);
         Route::get('quotes/{quote}/pdf/{type}', [PdfController::class, 'adminPdf']);
+        Route::post('quotes/{quote}/share-token', [PdfController::class, 'generateShareToken']);
 
         Route::apiResource('providers', AdminProviderController::class);
     });
@@ -50,5 +57,6 @@ Route::prefix('proveedor')->group(function () {
         Route::get('ordenes/{quote}/inventario', [ProveedorController::class, 'getInventario']);
         Route::put('ordenes/{quote}/inventario', [ProveedorController::class, 'saveInventario']);
         Route::get('quotes/{quote}/pdf/{type}', [PdfController::class, 'providerPdf']);
+        Route::post('quotes/{quote}/share-token', [PdfController::class, 'providerShareToken']);
     });
 });

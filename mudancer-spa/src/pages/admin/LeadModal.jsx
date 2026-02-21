@@ -178,9 +178,21 @@ const EDITABLE_FIELDS = [
   "elevador_origen", "acarreo_origen",
   "estado_destino", "localidad_destino", "colonia_destino", "piso_destino",
   "elevador_destino", "acarreo_destino",
-  "empaque", "fecha_recoleccion", "tiempo_estimado", "modalidad",
+  "empaque", "fecha_recoleccion", "fecha_entrega", "tiempo_estimado", "modalidad",
   "seguro", "inventario", "articulos_delicados", "observaciones",
 ];
+
+const ADMIN_WA = (import.meta.env.VITE_WHATSAPP_ADMIN ?? "").replace(/\D/g, "");
+
+function buildClientWaUrl(lead) {
+  if (!lead?.telefono_cliente) return null;
+  const phone = lead.telefono_cliente.replace(/\D/g, "");
+  const intl  = phone.length === 10 ? `521${phone}` : phone;
+  const msg   = encodeURIComponent(
+    `Hola ${lead.nombre_cliente ?? ""}, le contactamos de Mudancer respecto a su solicitud de mudanza (ID: ${lead.lead_id ?? lead.id}). ¿Podría confirmar los detalles de su mudanza?`
+  );
+  return `https://wa.me/${intl}?text=${msg}`;
+}
 
 export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
   const [lead, setLead]       = useState(null);
@@ -313,16 +325,37 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
           <h2 style={{ fontWeight: 700, fontSize: 18, color: "#111827", margin: 0 }}>
             LEAD/{displayId}
           </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "#f3f4f6", border: "none", borderRadius: 8,
-              width: 32, height: 32, cursor: "pointer", fontSize: 18,
-              color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            ×
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {/* WhatsApp button — contact client directly */}
+            {lead && buildClientWaUrl(lead) && (
+              <a
+                href={buildClientWaUrl(lead)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Contact client via WhatsApp"
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: 32, height: 32, borderRadius: 8,
+                  background: "#25D366", color: "#fff",
+                  textDecoration: "none", fontSize: 18, flexShrink: 0,
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+              </a>
+            )}
+            <button
+              onClick={onClose}
+              style={{
+                background: "#f3f4f6", border: "none", borderRadius: 8,
+                width: 32, height: 32, cursor: "pointer", fontSize: 18,
+                color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -421,11 +454,14 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
               </FieldBlock>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                <FieldBlock label="Collection Date">
-                  <Input name="fecha_recoleccion" type="date" value={lead.fecha_recoleccion} onChange={handleChange} />
+                <FieldBlock label="Fecha de Recolección">
+                  <Input name="fecha_recoleccion" type="date" value={lead.fecha_recoleccion ?? ""} onChange={handleChange} />
                 </FieldBlock>
-                <FieldBlock label="Est. Delivery Time">
-                  <Input name="tiempo_estimado" value={lead.tiempo_estimado} onChange={handleChange} placeholder="3–6 days" />
+                <FieldBlock label="Fecha de Llegada a Destino">
+                  <Input name="fecha_entrega" type="date" value={lead.fecha_entrega ?? ""} onChange={handleChange} />
+                </FieldBlock>
+                <FieldBlock label="Horario estimado">
+                  <Input name="tiempo_estimado" value={lead.tiempo_estimado} onChange={handleChange} placeholder="e.g. 3–6 días" />
                 </FieldBlock>
               </div>
 

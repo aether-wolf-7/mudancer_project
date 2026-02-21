@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getOrdenes, downloadQuotePdf, getInventario, saveInventario } from "../../api/proveedorApi";
+import { getOrdenes, downloadQuotePdf, getInventario, saveInventario, generateShareToken } from "../../api/proveedorApi";
 
 const ADMIN_WA = (import.meta.env.VITE_WHATSAPP_ADMIN ?? "").replace(/\D/g, "");
 
@@ -61,6 +61,39 @@ function PdfBtn({ quoteId, type, label, leadId }) {
       <button type="button" onClick={handle} disabled={busy}
         className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50">
         {busy ? "⏳…" : `⬇ ${label}`}
+      </button>
+      {err && <span className="text-red-500 text-xs ml-1">{err}</span>}
+    </span>
+  );
+}
+
+// ── Share Link Button ──────────────────────────────────────────────────────────
+function ShareBtn({ quoteId, docType, label }) {
+  const [busy, setBusy]     = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [err, setErr]       = useState(null);
+
+  async function handle() {
+    setBusy(true); setErr(null);
+    try {
+      const result = await generateShareToken(quoteId);
+      const url = result?.urls?.[docType];
+      if (!url) throw new Error("No URL");
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (e) {
+      setErr("Error al copiar");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <span>
+      <button type="button" onClick={handle} disabled={busy}
+        className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50">
+        {busy ? "⏳…" : copied ? "✓ ¡Copiado!" : `📋 ${label}`}
       </button>
       {err && <span className="text-red-500 text-xs ml-1">{err}</span>}
     </span>
@@ -290,8 +323,10 @@ function OrderCard({ quote }) {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 mt-1">
-                <PdfBtn quoteId={quote.id} type="cotizacion"    label="Cotización PDF" leadId={lead?.lead_id} />
-                <PdfBtn quoteId={quote.id} type="ods-proveedor" label="ODS PDF"        leadId={lead?.lead_id} />
+                <PdfBtn  quoteId={quote.id} type="cotizacion"    label="Cotización PDF"  leadId={lead?.lead_id} />
+                <ShareBtn quoteId={quote.id} docType="cotizacion"    label="Link Cotización" />
+                <PdfBtn  quoteId={quote.id} type="ods-proveedor" label="ODS PDF"         leadId={lead?.lead_id} />
+                <ShareBtn quoteId={quote.id} docType="ods-proveedor" label="Link ODS"        />
                 {waUrl ? (
                   <a href={waUrl} target="_blank" rel="noopener noreferrer"
                     className="px-3 py-1.5 text-xs font-medium text-white rounded-lg inline-flex items-center gap-1"

@@ -224,6 +224,23 @@ class ProveedorController extends Controller
     }
 
     /**
+     * GET /api/leads/link/{leadId}/{token} — public: resolve a lead's internal id from its public URL.
+     */
+    public function resolveLink(string $leadId, string $token): JsonResponse
+    {
+        $lead = Lead::where('lead_id', $leadId)
+            ->where('public_token', $token)
+            ->where('publicada', true)
+            ->first(['id', 'lead_id', 'nombre_cliente', 'estado_origen', 'estado_destino']);
+
+        if (! $lead) {
+            return response()->json(['message' => 'Enlace no válido o expirado.'], 404);
+        }
+
+        return response()->json(['id' => $lead->id, 'lead_id' => $lead->lead_id]);
+    }
+
+    /**
      * Get Provider record for the authenticated user (match by email).
      */
     private function getProviderForUser(): ?Provider

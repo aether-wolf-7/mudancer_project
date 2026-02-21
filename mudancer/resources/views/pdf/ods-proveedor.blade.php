@@ -216,65 +216,103 @@
   @endif
   @endif
 
+  @php
+    $invItems = $lead->inventario_recoleccion ?? [];
+    // Ensure at least 40 blank slots
+    $totalSlots = max(40, count($invItems) + 4);
+    // Build a flat array of 40 items (filled + blank rows)
+    $allItems = [];
+    for ($i = 1; $i <= $totalSlots; $i++) {
+        $data = $invItems[$i - 1] ?? null;
+        $allItems[] = [
+            'no'       => $i,
+            'articulo' => $data['articulo'] ?? '',
+            'condicion'=> $data['condicion'] ?? '',
+        ];
+    }
+    // Split into two pages of 20 items each (displayed 2 columns per row = 10 rows)
+    $pageChunks = array_chunk($allItems, 20);
+  @endphp
+
   <div class="section-title">Inventario de Recolección</div>
-  <table class="inv-table" cellpadding="0" cellspacing="0">
-    <tr>
-      <th style="width:6%">No.</th>
-      <th style="width:44%">Artículo</th>
-      <th style="width:14%">Condición</th>
-      <th style="width:36%">Notas</th>
-    </tr>
-    @php $invItems = $lead->inventario_recoleccion ?? []; @endphp
-    @if(count($invItems) > 0)
-      @foreach($invItems as $item)
-      <tr @if($loop->even) class="alt" @endif>
-        <td style="text-align:center">{{ $item['numero'] ?? $loop->iteration }}</td>
-        <td>{{ $item['articulo'] ?? '' }}</td>
-        <td style="text-align:center">{{ $item['condicion'] ?? '' }}</td>
-        <td>{{ $item['notas'] ?? '' }}</td>
-      </tr>
-      @endforeach
-      @for($i = count($invItems) + 1; $i <= max(count($invItems) + 3, 20); $i++)
-      <tr @if($i % 2 == 0) class="alt" @endif>
-        <td style="text-align:center">{{ $i }}</td>
-        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
-      </tr>
-      @endfor
-    @else
-      @for($i = 1; $i <= 20; $i++)
-      <tr @if($i % 2 == 0) class="alt" @endif>
-        <td style="text-align:center">{{ $i }}</td>
-        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
-      </tr>
-      @endfor
+  <p style="font-size:7.5pt; color:#666; margin-bottom:5px">Condiciones: RT Roto | CO Cortado | FL Flojo | OX Oxidado | QU Quemado | AR Arañado | DP Despegado | BUM Golpeado | RAY Rayado | FAL Faltante | SU Sucio | AB Abollado | RAJ Rajado | CD Desarmado | FR Fracturado | NF No Funciona</p>
+
+  @foreach($pageChunks as $pageIdx => $pageItems)
+    @if($pageIdx > 0)
+    <div class="page-break"></div>
+    <div class="header" style="margin-bottom:8px">
+      <table style="width:100%" cellpadding="0" cellspacing="0"><tr>
+        <td><div class="provider-name">{{ $provider->nombre }}</div></td>
+        <td style="text-align:right"><div style="font-size:11pt; font-weight:bold; color:#1e3a5f">Inventario (cont.) — {{ $lead->lead_id }}</div></td>
+      </tr></table>
+    </div>
+    <p style="font-size:7.5pt; color:#666; margin-bottom:5px">Condiciones: RT Roto | CO Cortado | FL Flojo | OX Oxidado | QU Quemado | AR Arañado | DP Despegado | BUM Golpeado | RAY Rayado | FAL Faltante | SU Sucio | AB Abollado | RAJ Rajado | CD Desarmado | FR Fracturado | NF No Funciona</p>
     @endif
-  </table>
 
-  <div style="margin-top:8px; font-size:7pt; color:#777">
-    <strong>Condiciones:</strong>
-    RT Roto &nbsp;|&nbsp; CO Cortado &nbsp;|&nbsp; FL Flojo/Suelto &nbsp;|&nbsp; OX Oxidado &nbsp;|&nbsp; QU Quemado &nbsp;|&nbsp;
-    AR Arañado &nbsp;|&nbsp; DP Despegado &nbsp;|&nbsp; BUM Golpeado &nbsp;|&nbsp; RAY Rayado &nbsp;|&nbsp;
-    FAL Faltante &nbsp;|&nbsp; SU Sucio &nbsp;|&nbsp; AB Abollado &nbsp;|&nbsp; RAJ Rajado &nbsp;|&nbsp;
-    CD Desarmado &nbsp;|&nbsp; DEC Decolorado &nbsp;|&nbsp; FR Fracturado &nbsp;|&nbsp; NF No Funciona
-  </div>
+    {{-- 2-column table: left half (items 1-10 of chunk) / right half (items 11-20 of chunk) --}}
+    @php
+      $leftCol  = array_slice($pageItems, 0, 10);
+      $rightCol = array_slice($pageItems, 10, 10);
+      // Pad to same length
+      while (count($leftCol)  < 10) $leftCol[]  = ['no' => '—', 'articulo' => '', 'condicion' => ''];
+      while (count($rightCol) < 10) $rightCol[] = ['no' => '—', 'articulo' => '', 'condicion' => ''];
+    @endphp
 
-  <div style="font-size:8pt; color:#333; margin-top:8px">
-    <strong>Notas:</strong> ___________________________________________________________________________________________________________
-  </div>
+    <table style="width:100%; border-collapse:collapse" cellpadding="0" cellspacing="0">
+      {{-- Column headers --}}
+      <tr>
+        <td style="width:49%">
+          <table style="width:100%; border-collapse:collapse" cellpadding="0" cellspacing="0">
+            <tr>
+              <th style="background:#1e3a5f; color:#fff; font-size:7.5pt; padding:3px 5px; width:10%; text-align:center">No.</th>
+              <th style="background:#1e3a5f; color:#fff; font-size:7.5pt; padding:3px 5px; width:68%">Artículo</th>
+              <th style="background:#1e3a5f; color:#fff; font-size:7.5pt; padding:3px 5px; width:22%; text-align:center">Condición</th>
+            </tr>
+            @foreach($leftCol as $idx => $item)
+            <tr style="{{ $idx % 2 == 0 ? '' : 'background:#f8f9fb' }}">
+              <td style="border:1px solid #ddd; font-size:7.5pt; padding:2px 4px; text-align:center">{{ $item['no'] }}</td>
+              <td style="border:1px solid #ddd; font-size:7.5pt; padding:2px 4px">{{ $item['articulo'] ?: '&nbsp;' }}</td>
+              <td style="border:1px solid #ddd; font-size:7.5pt; padding:2px 4px; text-align:center">{{ $item['condicion'] ?: '&nbsp;' }}</td>
+            </tr>
+            @endforeach
+          </table>
+        </td>
+        <td style="width:2%"></td>
+        <td style="width:49%">
+          <table style="width:100%; border-collapse:collapse" cellpadding="0" cellspacing="0">
+            <tr>
+              <th style="background:#1e3a5f; color:#fff; font-size:7.5pt; padding:3px 5px; width:10%; text-align:center">No.</th>
+              <th style="background:#1e3a5f; color:#fff; font-size:7.5pt; padding:3px 5px; width:68%">Artículo</th>
+              <th style="background:#1e3a5f; color:#fff; font-size:7.5pt; padding:3px 5px; width:22%; text-align:center">Condición</th>
+            </tr>
+            @foreach($rightCol as $idx => $item)
+            <tr style="{{ $idx % 2 == 0 ? '' : 'background:#f8f9fb' }}">
+              <td style="border:1px solid #ddd; font-size:7.5pt; padding:2px 4px; text-align:center">{{ $item['no'] }}</td>
+              <td style="border:1px solid #ddd; font-size:7.5pt; padding:2px 4px">{{ $item['articulo'] ?: '&nbsp;' }}</td>
+              <td style="border:1px solid #ddd; font-size:7.5pt; padding:2px 4px; text-align:center">{{ $item['condicion'] ?: '&nbsp;' }}</td>
+            </tr>
+            @endforeach
+          </table>
+        </td>
+      </tr>
+    </table>
 
-  {{-- Signatures inventory ── --}}
-  <table class="sig-table" cellpadding="0" cellspacing="0" style="margin-top:16px">
-    <tr>
-      <td style="width:50%; text-align:center; padding:0 12px">
-        <div class="sig-line"></div>
-        <div class="sig-label">Firma Entregado — Cliente</div>
-      </td>
-      <td style="width:50%; text-align:center; padding:0 12px">
-        <div class="sig-line"></div>
-        <div class="sig-label">Firma Recibido — Proveedor</div>
-      </td>
-    </tr>
-  </table>
+    @if($loop->last)
+    {{-- Signatures after final inventory page --}}
+    <table class="sig-table" cellpadding="0" cellspacing="0" style="margin-top:16px">
+      <tr>
+        <td style="width:50%; text-align:center; padding:0 12px">
+          <div class="sig-line"></div>
+          <div class="sig-label">Firma Entregado — Cliente</div>
+        </td>
+        <td style="width:50%; text-align:center; padding:0 12px">
+          <div class="sig-line"></div>
+          <div class="sig-label">Firma Recibido — Proveedor</div>
+        </td>
+      </tr>
+    </table>
+    @endif
+  @endforeach
 
   {{-- ── PAGE 3: VEHICLE INVENTORY (optional) ── --}}
   <div class="page-break"></div>

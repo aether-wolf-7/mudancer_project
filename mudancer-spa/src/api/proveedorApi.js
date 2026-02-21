@@ -59,3 +59,12 @@ export async function saveInventario(quoteId, items) {
   const { data } = await proveedorApi.put(`/proveedor/ordenes/${quoteId}/inventario`, { items });
   return data?.data ?? [];
 }
+
+/**
+ * Generate (or retrieve) a shareable public token for a quote.
+ * Returns { token, urls: { cotizacion, ods-proveedor, ... } }
+ */
+export async function generateShareToken(quoteId) {
+  const { data } = await proveedorApi.post(`/proveedor/quotes/${quoteId}/share-token`);
+  return data;
+}

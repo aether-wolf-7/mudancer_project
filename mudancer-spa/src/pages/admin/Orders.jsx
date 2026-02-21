@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { getOrdenes, concluirLead, downloadQuotePdf, marcarPago } from "../../api/adminApi";
+import { getOrdenes, concluirLead, downloadQuotePdf, marcarPago, generateShareToken } from "../../api/adminApi";
+import { apiBase } from "../../api/pdfUtils.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -52,7 +53,7 @@ function ProviderAvatar({ logo, nombre, size = 44 }) {
 
 // ── PDF Download Button ───────────────────────────────────────────────────────
 
-function PdfButton({ label, quoteId, type, filename }) {
+function PdfButton({ label, quoteId, type, filename, compact = false }) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
 
@@ -75,11 +76,11 @@ function PdfButton({ label, quoteId, type, filename }) {
         onClick={handleClick}
         disabled={loading}
         style={{
-          width: "100%", padding: "14px 0",
+          width: "100%", padding: compact ? "10px 0" : "14px 0",
           background: loading ? "#f0fdf4" : "#fff",
           border: "2px solid #22c55e",
           borderRadius: 12, color: "#374151",
-          fontSize: 14, fontWeight: 500,
+          fontSize: compact ? 13 : 14, fontWeight: 500,
           cursor: loading ? "not-allowed" : "pointer",
           textAlign: "center", transition: "background 0.15s",
           display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -87,9 +88,78 @@ function PdfButton({ label, quoteId, type, filename }) {
         onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#f0fdf4"; }}
         onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = loading ? "#f0fdf4" : "#fff"; }}
       >
-        {loading ? "⏳ Generating…" : `⬇ ${label}`}
+        {loading ? "⏳ Generating…" : label}
       </button>
       {error && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#dc2626" }}>{error}</p>}
+    </div>
+  );
+}
+
+// ── Shareable Link Button ─────────────────────────────────────────────────────
+
+function ShareLinkButton({ quoteId, docType }) {
+  const [busy, setBusy]     = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [err, setErr]       = useState(null);
+
+  async function handleClick() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const result = await generateShareToken(quoteId);
+      const url = result?.urls?.[docType];
+      if (!url) throw new Error("No URL returned");
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch (e) {
+      setErr("Copy failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={busy}
+        title="Copy shareable public link"
+        style={{
+          width: "100%", padding: "10px 0",
+          background: copied ? "#f0fdf4" : "#fff",
+          border: "2px solid #64748b",
+          borderRadius: 12, color: copied ? "#16a34a" : "#475569",
+          fontSize: 13, fontWeight: 500,
+          cursor: busy ? "not-allowed" : "pointer",
+          textAlign: "center", transition: "background 0.15s",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        }}
+      >
+        {busy ? "⏳ Generating…" : copied ? "✓ Link copied!" : "📋 Copy shareable link"}
+      </button>
+      {err && <p style={{ margin: "3px 0 0", fontSize: 12, color: "#dc2626" }}>{err}</p>}
+    </div>
+  );
+}
+
+// ── Doc Row (Download + Share pair) ──────────────────────────────────────────
+
+function DocRow({ label, quoteId, type, filename }) {
+  return (
+    <div style={{ borderRadius: 12, border: "1.5px solid #e5e7eb", overflow: "hidden" }}>
+      <p style={{ margin: 0, padding: "7px 12px 0", fontSize: 11, color: "#9ca3af", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        {label}
+      </p>
+      <div style={{ display: "flex", gap: 8, padding: "6px 10px 10px" }}>
+        <div style={{ flex: 1 }}>
+          <PdfButton label="⬇ Download" quoteId={quoteId} type={type} filename={filename} compact />
+        </div>
+        <div style={{ flex: 1 }}>
+          <ShareLinkButton quoteId={quoteId} docType={type} />
+        </div>
+      </div>
     </div>
   );
 }
@@ -263,28 +333,16 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
         </div>
       )}
 
-      {/* Supplier section */}
+      {/* Documents section — each row has Download + Copy Shareable Link */}
       {q && (
         <div style={{ marginTop: 22 }}>
           <p style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: "0 0 10px" }}>
-            Supplier
+            Documents
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <PdfButton label="Supplier Quote (PDF)" quoteId={q.id} type="cotizacion" filename={`COTIZACION-${order.lead_id || order.id}.pdf`} />
-            <PdfButton label="Supplier Service Order (PDF)" quoteId={q.id} type="ods-proveedor" filename={`ODS-PROVEEDOR-${order.lead_id || order.id}.pdf`} />
-          </div>
-        </div>
-      )}
-
-      {/* Client section */}
-      {q && (
-        <div style={{ marginTop: 22 }}>
-          <p style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: "0 0 10px" }}>
-            Client
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <PdfButton label="Client Quote (PDF)" quoteId={q.id} type="cotizacion" filename={`COTIZACION-CLIENTE-${order.lead_id || order.id}.pdf`} />
-            <PdfButton label="Client Service Order (PDF)" quoteId={q.id} type="ods-cliente" filename={`ODS-CLIENTE-${order.lead_id || order.id}.pdf`} />
+            <DocRow label="Quote (Cotización)" quoteId={q.id} type="cotizacion" filename={`COTIZACION-${order.lead_id || order.id}.pdf`} />
+            <DocRow label="Client Service Order (ODS Cliente)" quoteId={q.id} type="ods-cliente" filename={`ODS-CLIENTE-${order.lead_id || order.id}.pdf`} />
+            <DocRow label="Provider Service Order (ODS Proveedor)" quoteId={q.id} type="ods-proveedor" filename={`ODS-PROVEEDOR-${order.lead_id || order.id}.pdf`} />
           </div>
         </div>
       )}

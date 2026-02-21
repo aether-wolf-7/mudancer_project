@@ -95,3 +95,12 @@ export async function downloadQuotePdf(quoteId, type, filename) {
   const url = `${apiBase()}/admin/quotes/${quoteId}/pdf/${type}`;
   await downloadAuthPdf(url, getAdminToken(), filename);
 }
+
+/**
+ * Generate (or retrieve) a shareable public token for a quote.
+ * Returns { token, urls: { cotizacion, ods-cliente, ods-proveedor } }
+ */
+export async function generateShareToken(quoteId) {
+  const { data } = await api.post(`/admin/quotes/${quoteId}/share-token`);
+  return data; // { token, urls }
+}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../api/proveedorApi";
 import { setProviderToken } from "../../api/proveedorClient";
+import { PROVIDER_REDIRECT_KEY } from "../LeadRedirect";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -17,7 +18,13 @@ export default function Login() {
     try {
       const res = await login(email, password);
       setProviderToken(res.token);
-      navigate("/proveedor/dashboard", { replace: true });
+      const redirect = localStorage.getItem(PROVIDER_REDIRECT_KEY);
+      if (redirect) {
+        localStorage.removeItem(PROVIDER_REDIRECT_KEY);
+        navigate(redirect, { replace: true });
+      } else {
+        navigate("/proveedor/dashboard", { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Login failed");
     } finally {

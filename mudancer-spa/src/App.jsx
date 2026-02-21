@@ -13,6 +13,7 @@ import ProveedorDashboard from "./pages/proveedor/Dashboard";
 import ProveedorLeadDetail from "./pages/proveedor/LeadDetail";
 import Ordenes from "./pages/proveedor/Ordenes";
 import Cotizacion from "./pages/cotizacion/Cotizacion";
+import LeadRedirect from "./pages/LeadRedirect";
 
 function App() {
   return (
@@ -47,6 +48,9 @@ function App() {
       </Route>
 
       <Route path="/cotizacion" element={<Cotizacion />} />
+
+      {/* Public lead deep-link: /leads/:leadId/:token → resolves to /proveedor/leads/:id */}
+      <Route path="/leads/:leadId/:token" element={<LeadRedirect />} />
 
       <Route path="*" element={<Navigate to="/admin/login" replace />} />
     </Routes>
