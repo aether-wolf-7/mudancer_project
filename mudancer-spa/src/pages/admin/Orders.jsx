@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getOrdenes } from "../../api/adminApi";
+import { getOrdenes, concluirLead } from "../../api/adminApi";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -121,9 +121,27 @@ function LeadCard({ order, selected, onClick }) {
 
 // ── Order Detail View ─────────────────────────────────────────────────────────
 
-function OrderDetail({ order, onBack }) {
+function OrderDetail({ order, onBack, onConcluded }) {
   const q = order.assigned_quote;
   const p = q?.provider;
+
+  const [confirming, setConfirming] = useState(false);
+  const [concluding, setConcluding] = useState(false);
+  const [concludeError, setConcludeError] = useState(null);
+
+  async function handleConclude() {
+    setConcluding(true);
+    setConcludeError(null);
+    try {
+      await concluirLead(order.id);
+      onConcluded(order.id);
+    } catch (err) {
+      setConcludeError(err.response?.data?.message || err.message || "Failed to conclude order.");
+      setConfirming(false);
+    } finally {
+      setConcluding(false);
+    }
+  }
 
   return (
     <div>
@@ -200,6 +218,56 @@ function OrderDetail({ order, onBack }) {
           <p style={{ fontSize: 14, color: "#374151", margin: 0, lineHeight: 1.5 }}>{q.notas}</p>
         </div>
       )}
+
+      {/* ── Conclude Service ── */}
+      <div style={{ marginTop: 28, borderTop: "1.5px solid #f1f5f9", paddingTop: 20 }}>
+        {concludeError && (
+          <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "0.625rem 0.875rem", fontSize: 13, marginBottom: 12 }}>
+            {concludeError}
+          </div>
+        )}
+
+        {!confirming ? (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            style={{
+              width: "100%", padding: "0.875rem", fontSize: 15, fontWeight: 700,
+              fontFamily: "inherit", color: "#fff", background: "#0f172a",
+              border: "none", borderRadius: 12, cursor: "pointer",
+              boxShadow: "0 3px 10px rgba(0,0,0,0.18)", transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "#1e293b"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "#0f172a"; }}
+          >
+            Mark as Concluded
+          </button>
+        ) : (
+          <div style={{ background: "#fefce8", border: "1.5px solid #fbbf24", borderRadius: 12, padding: "1rem" }}>
+            <p style={{ margin: "0 0 0.875rem", fontSize: 14, color: "#78350f", fontWeight: 600, textAlign: "center" }}>
+              Confirm: mark this service as concluded?
+            </p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                disabled={concluding}
+                style={{ flex: 1, padding: "0.75rem", fontSize: 14, fontWeight: 600, fontFamily: "inherit", color: "#374151", background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 10, cursor: "pointer" }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConclude}
+                disabled={concluding}
+                style={{ flex: 1, padding: "0.75rem", fontSize: 14, fontWeight: 700, fontFamily: "inherit", color: "#fff", background: concluding ? "#86efac" : "#16a34a", border: "none", borderRadius: 10, cursor: concluding ? "not-allowed" : "pointer", transition: "background 0.2s" }}
+              >
+                {concluding ? "Saving…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -223,6 +291,11 @@ export default function Orders() {
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
+  function handleConcluded(orderId) {
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+    setSelectedOrder(null);
+  }
+
   // ── Detail view ─────────────────────────────────────────────────────────
   if (selectedOrder) {
     return (
@@ -230,7 +303,7 @@ export default function Orders() {
         <h1 style={{ textAlign: "center", fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.12em", color: "#64748b", textTransform: "uppercase", margin: "0 0 1.25rem" }}>
           ORDER
         </h1>
-        <OrderDetail order={selectedOrder} onBack={() => setSelectedOrder(null)} />
+        <OrderDetail order={selectedOrder} onBack={() => setSelectedOrder(null)} onConcluded={handleConcluded} />
       </div>
     );
   }

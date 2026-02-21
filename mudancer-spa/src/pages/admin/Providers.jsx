@@ -158,6 +158,8 @@ function ProviderModal({ provider, onClose, onSaved }) {
     logo:        provider.logo        ?? "",
     reputacion:  toStars(provider.reputacion),
   });
+  const [pwForm, setPwForm]   = useState({ password: "", confirm: "" });
+  const [showPw, setShowPw]   = useState(false);
   const [saving, setSaving]   = useState(false);
   const [errors, setErrors]   = useState({});
   const [success, setSuccess] = useState(false);
@@ -167,14 +169,33 @@ function ProviderModal({ provider, onClose, onSaved }) {
     setErrors(e => ({ ...e, [key]: "" }));
   }
 
+  function setPw(key, val) {
+    setPwForm(f => ({ ...f, [key]: val }));
+    setErrors(e => ({ ...e, [key]: "" }));
+  }
+
   async function handleSave(e) {
     e.preventDefault();
+
+    // Client-side password validation (only if a new password was entered)
+    if (pwForm.password || pwForm.confirm) {
+      const pwErrors = {};
+      if (pwForm.password.length < 6)
+        pwErrors.password = "Password must be at least 6 characters.";
+      if (pwForm.password !== pwForm.confirm)
+        pwErrors.confirm = "Passwords do not match.";
+      if (Object.keys(pwErrors).length) { setErrors(pwErrors); return; }
+    }
+
     setSaving(true);
     setErrors({});
     setSuccess(false);
     try {
-      const saved = await updateProvider(provider.id, form);
+      const payload = { ...form };
+      if (pwForm.password) payload.password = pwForm.password;
+      const saved = await updateProvider(provider.id, payload);
       setSuccess(true);
+      setPwForm({ password: "", confirm: "" });
       onSaved(saved);
       setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
@@ -317,6 +338,47 @@ function ProviderModal({ provider, onClose, onSaved }) {
                 <label style={labelStyle}>Email</label>
                 <input className="modal-input" style={inputStyle("email")} type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="email@company.com" />
                 {errors.email && <p style={{ margin: "0.25rem 0 0", fontSize: "0.78rem", color: "#dc2626" }}>{errors.email[0] ?? errors.email}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Change Password ── */}
+          <div style={{ background: "#f8fafc", borderRadius: 14, padding: "1rem", marginBottom: "1rem" }}>
+            <p style={{ margin: "0 0 0.25rem", fontWeight: 700, color: "#475569", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.07em" }}>Change Password</p>
+            <p style={{ margin: "0 0 0.75rem", fontSize: "0.75rem", color: "#94a3b8" }}>Leave blank to keep the current password.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div>
+                <label style={labelStyle}>New Password</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    className="modal-input"
+                    style={inputStyle("password")}
+                    type={showPw ? "text" : "password"}
+                    value={pwForm.password}
+                    onChange={(e) => setPw("password", e.target.value)}
+                    placeholder="Min. 6 characters"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(v => !v)}
+                    style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#94a3b8", fontSize: "1.1rem", padding: 0, lineHeight: 1 }}
+                  >{showPw ? "🙈" : "👁️"}</button>
+                </div>
+                {errors.password && <p style={{ margin: "0.25rem 0 0", fontSize: "0.78rem", color: "#dc2626" }}>⚠ {errors.password}</p>}
+              </div>
+              <div>
+                <label style={labelStyle}>Confirm New Password</label>
+                <input
+                  className="modal-input"
+                  style={inputStyle("confirm")}
+                  type={showPw ? "text" : "password"}
+                  value={pwForm.confirm}
+                  onChange={(e) => setPw("confirm", e.target.value)}
+                  placeholder="Repeat new password"
+                  autoComplete="new-password"
+                />
+                {errors.confirm && <p style={{ margin: "0.25rem 0 0", fontSize: "0.78rem", color: "#dc2626" }}>⚠ {errors.confirm}</p>}
               </div>
             </div>
           </div>

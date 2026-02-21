@@ -1,11 +1,22 @@
 import { useState, useEffect } from "react";
-import { getOrdenes, concludeOrder } from "../../api/proveedorApi";
+import { getOrdenes } from "../../api/proveedorApi";
+
+const ADMIN_WA = (import.meta.env.VITE_WHATSAPP_ADMIN ?? "").replace(/\D/g, "");
+
+function buildConcluirWaUrl(quote) {
+  if (!ADMIN_WA) return null;
+  const leadId = quote.lead?.lead_id ?? quote.lead_id ?? "";
+  const cliente = quote.lead?.nombre_cliente ?? "";
+  const msg = encodeURIComponent(
+    `Hola, he concluido el servicio de mudanza.\nID de solicitud: ${leadId}${cliente ? `\nCliente: ${cliente}` : ""}\nPor favor, ¿puedes marcar el servicio como concluido?`
+  );
+  return `https://wa.me/${ADMIN_WA}?text=${msg}`;
+}
 
 export default function Ordenes() {
   const [ordenes, setOrdenes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [concludingId, setConcludingId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -22,19 +33,6 @@ export default function Ordenes() {
       });
     return () => { cancelled = true; };
   }, []);
-
-  async function handleConcluir(quoteId) {
-    setError(null);
-    setConcludingId(quoteId);
-    try {
-      await concludeOrder(quoteId);
-      setOrdenes((prev) => prev.filter((q) => q.id !== quoteId));
-    } catch (err) {
-      setError(err.response?.data?.message || err.message);
-    } finally {
-      setConcludingId(null);
-    }
-  }
 
   if (loading) {
     return (
@@ -109,14 +107,21 @@ export default function Ordenes() {
                         >
                           ODS PDF
                         </a>
-                        <button
-                          type="button"
-                          onClick={() => handleConcluir(quote.id)}
-                          disabled={concludingId === quote.id}
-                          className="px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-                        >
-                          {concludingId === quote.id ? "…" : "Concluir"}
-                        </button>
+                        {buildConcluirWaUrl(quote) ? (
+                          <a
+                            href={buildConcluirWaUrl(quote)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 text-xs font-medium text-white rounded-lg"
+                            style={{ background: "#25D366", display: "inline-flex", alignItems: "center", gap: 4 }}
+                          >
+                            <span>✓</span> Concluir (WhatsApp)
+                          </a>
+                        ) : (
+                          <span className="px-3 py-1.5 text-xs text-gray-400">
+                            Notify admin to conclude
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>

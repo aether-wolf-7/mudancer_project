@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class ProviderController extends Controller
 {
@@ -116,7 +117,23 @@ class ProviderController extends Controller
             'responsable' => 'sometimes|string|max:255',
             'logo'        => 'nullable|string|max:500',
             'reputacion'  => 'nullable|numeric|min:0|max:5',
+            'password'    => 'sometimes|nullable|string|min:6',
+        ], [
+            'password.min' => 'New password must be at least 6 characters.',
         ]);
+
+        // Update password on the linked User account when provided
+        if (!empty($validated['password'])) {
+            $user = \App\Models\User::find($provider->user_id)
+                ?? \App\Models\User::where('email', $provider->email)->first();
+
+            if ($user) {
+                $user->update(['password' => Hash::make($validated['password'])]);
+            }
+        }
+
+        // Never persist 'password' onto the providers table
+        unset($validated['password']);
 
         $provider->update($validated);
 
