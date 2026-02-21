@@ -10,32 +10,24 @@ use Illuminate\Support\Facades\Hash;
 class UserSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
-     * Creates provider users (run AFTER ProviderSeeder). Then links providers to users by email.
+     * Create 20 provider users (run AFTER ProviderSeeder). Link providers to users by email.
      */
     public function run(): void
     {
-        $users = [
-            ['name' => 'Gaestra Admin', 'email' => 'gaestra@mudancer.com', 'phone' => '5551001001'],
-            ['name' => 'Inter Admin', 'email' => 'inter@mudancer.com', 'phone' => '5551001002'],
-            ['name' => 'Moreno Admin', 'email' => 'moreno@mudancer.com', 'phone' => '5551001003'],
-            ['name' => 'Mudanzas IS Admin', 'email' => 'mudanzas-is@mudancer.com', 'phone' => '5551001004'],
-            ['name' => 'Gómez Admin', 'email' => 'gomez@mudancer.com', 'phone' => '5551001005'],
-        ];
-
-        foreach ($users as $data) {
+        for ($i = 1; $i <= 20; $i++) {
+            $email = "provider{$i}@mudancer.com";
+            $phone = '555' . str_pad(1000000 + $i, 7, '0');
             User::updateOrCreate(
-                ['email' => $data['email']],
+                ['email' => $email],
                 [
-                    'name' => $data['name'],
-                    'phone' => $data['phone'],
+                    'name'     => "Provider {$i} Admin",
+                    'phone'    => $phone,
                     'password' => Hash::make('password'),
-                    'role' => 'provider',
+                    'role'     => 'provider',
                 ]
             );
         }
 
-        // Link each provider to its user by email
         foreach (Provider::all() as $provider) {
             $user = User::where('email', $provider->email)->first();
             if ($user) {

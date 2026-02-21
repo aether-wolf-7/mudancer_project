@@ -158,6 +158,20 @@ class LeadController extends Controller
 
         Log::info('Webhook lead created', ['lead_id' => $leadId]);
 
+        // ── WhatsApp notification to admin ────────────────────────────────────
+        $adminWaNumber = preg_replace('/[^0-9]/', '', (string) env('ADMIN_WHATSAPP_NUMBER', ''));
+        if ($adminWaNumber !== '') {
+            $msgText = implode("\n", [
+                "🚛 *Nuevo lead recibido*",
+                "ID: {$leadId}",
+                "👤 {$request->input('client_name')} | 📞 {$telefono}",
+                "📍 {$request->input('origin_state')} → {$request->input('destination_state')}",
+                "Revisa el panel de administrador para aprobar y publicar.",
+            ]);
+            $waUrl = 'https://wa.me/' . $adminWaNumber . '?text=' . rawurlencode($msgText);
+            Log::info("📱 Admin WA notification ready — click link to open WhatsApp", ['wa_url' => $waUrl]);
+        }
+
         return response()->json(['success' => true, 'lead_id' => $leadId]);
     }
 

@@ -100,13 +100,17 @@ class ProveedorController extends Controller
 
     /**
      * POST /api/proveedor/leads/{lead}/cotizar — submit quote.
-     * apartado = precio_total * 0.2, anticipo = 0.4, pago_final = 0.4
+     * Default split: apartado=20%, anticipo=40%, pago_final=40%.
+     * Provider may override by sending explicit apartado/anticipo/pago_final amounts.
      */
     public function submitQuote(Request $request, Lead $lead): JsonResponse
     {
         $validated = $request->validate([
             'precio_total' => 'required|numeric|min:0',
-            'notas' => 'nullable|string',
+            'notas'        => 'nullable|string',
+            'apartado'     => 'nullable|numeric|min:0',
+            'anticipo'     => 'nullable|numeric|min:0',
+            'pago_final'   => 'nullable|numeric|min:0',
         ]);
 
         $provider = $this->getProviderForUser();
@@ -115,14 +119,27 @@ class ProveedorController extends Controller
         }
 
         $precio = (float) $validated['precio_total'];
+
+        // Use explicit split if all three are provided; otherwise default percentages
+        $hasExplicitSplit = isset($validated['apartado'], $validated['anticipo'], $validated['pago_final']);
+        if ($hasExplicitSplit) {
+            $apartado  = round((float) $validated['apartado'],   2);
+            $anticipo  = round((float) $validated['anticipo'],   2);
+            $pagoFinal = round((float) $validated['pago_final'], 2);
+        } else {
+            $apartado  = round($precio * 0.2, 2);
+            $anticipo  = round($precio * 0.4, 2);
+            $pagoFinal = round($precio * 0.4, 2);
+        }
+
         $quote = Quote::create([
-            'lead_id' => $lead->id,
-            'provider_id' => $provider->id,
+            'lead_id'      => $lead->id,
+            'provider_id'  => $provider->id,
             'precio_total' => $precio,
-            'apartado' => round($precio * 0.2, 2),
-            'anticipo' => round($precio * 0.4, 2),
-            'pago_final' => round($precio * 0.4, 2),
-            'notas' => $validated['notas'] ?? null,
+            'apartado'     => $apartado,
+            'anticipo'     => $anticipo,
+            'pago_final'   => $pagoFinal,
+            'notas'        => $validated['notas'] ?? null,
         ]);
 
         return response()->json(['data' => $quote], 201);
