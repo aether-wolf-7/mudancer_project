@@ -198,12 +198,21 @@ function QuoteCard({ quote, lead, onSelect, selecting }) {
         </button>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{
-            background: "#f0fdf4", border: "1px solid #bbf7d0",
-            borderRadius: 10, padding: "10px 14px", fontSize: 13,
-            color: "#15803d", lineHeight: 1.5,
-          }}>
-            ✅ Marcaste esta propuesta como tu preferida. Para proceder con el apartado, contáctanos por WhatsApp.
+          {/* Payment instructions */}
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "12px 14px" }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: "#15803d", margin: "0 0 6px" }}>
+              ✅ ¡Propuesta seleccionada!
+            </p>
+            <p style={{ fontSize: 13, color: "#166534", margin: "0 0 8px", lineHeight: 1.5 }}>
+              Para reservar tu lugar, realiza el pago del <strong>apartado</strong> y comunícate con nosotros por WhatsApp para confirmarlo.
+            </p>
+            <div style={{ background: "#dcfce7", borderRadius: 8, padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 13, color: "#166534", fontWeight: 600 }}>Apartado a pagar:</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: "#15803d" }}>{fmtMoney(quote.apartado)}</span>
+            </div>
+            <p style={{ fontSize: 11, color: "#6b7280", margin: "6px 0 0", lineHeight: 1.4 }}>
+              El anticipo ({fmtMoney(quote.anticipo)}) se cubre el día de la recolección. El pago final ({fmtMoney(quote.pago_final)}) se realiza a la llegada a destino.
+            </p>
           </div>
           {waUrl && (
             <a

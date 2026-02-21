@@ -102,6 +102,59 @@ class ProveedorController extends Controller
     }
 
     /**
+     * GET /api/proveedor/ordenes/{quote}/inventario — get pickup inventory for this quote's lead.
+     */
+    public function getInventario(Quote $quote): JsonResponse
+    {
+        $provider = $this->getProviderForUser();
+        if (! $provider || (int) $quote->provider_id !== $provider->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $lead = $quote->lead;
+        if (! $lead) {
+            return response()->json(['message' => 'Lead not found.'], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'inventario_declarado'    => $lead->inventario,
+                'inventario_recoleccion'  => $lead->inventario_recoleccion ?? [],
+            ],
+        ]);
+    }
+
+    /**
+     * PUT /api/proveedor/ordenes/{quote}/inventario — save pickup inventory.
+     * Body: { items: [{numero, articulo, condicion, notas}] }
+     */
+    public function saveInventario(Request $request, Quote $quote): JsonResponse
+    {
+        $provider = $this->getProviderForUser();
+        if (! $provider || (int) $quote->provider_id !== $provider->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $validated = $request->validate([
+            'items'                => 'required|array',
+            'items.*.numero'       => 'required|integer|min:1',
+            'items.*.articulo'     => 'required|string|max:255',
+            'items.*.condicion'    => 'nullable|string|max:50',
+            'items.*.notas'        => 'nullable|string|max:500',
+        ]);
+
+        $lead = $quote->lead;
+        if (! $lead) {
+            return response()->json(['message' => 'Lead not found.'], 404);
+        }
+
+        $lead->inventario_recoleccion = $validated['items'];
+        $lead->save();
+
+        return response()->json(['message' => 'Inventario guardado.', 'data' => $lead->inventario_recoleccion]);
+    }
+
+    /**
      * POST /api/proveedor/ordenes/{quote}/concluir — log and return success.
      */
     public function conclude(Quote $quote): JsonResponse

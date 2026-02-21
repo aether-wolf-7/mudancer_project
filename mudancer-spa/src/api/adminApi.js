@@ -81,6 +81,12 @@ export async function assignQuote(quoteId) {
   return data ?? null;
 }
 
+/** POST /api/admin/quotes/{quote}/marcar-pago — toggle apartado_pagado. */
+export async function marcarPago(quoteId) {
+  const { data } = await api.post(`/admin/quotes/${quoteId}/marcar-pago`);
+  return data?.data ?? null;
+}
+
 /**
  * Download a PDF document for a quote (admin).
  * type: 'cotizacion' | 'ods-cliente' | 'ods-proveedor'

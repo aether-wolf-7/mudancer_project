@@ -30,6 +30,7 @@ Route::prefix('admin')->group(function () {
         Route::get('cotizadas', [AdminLeadController::class, 'quotedLeads']);
         Route::get('ordenes', [AdminLeadController::class, 'ordenes']);
         Route::post('quotes/{quote}/asignar', [AdminLeadController::class, 'assignQuote']);
+        Route::post('quotes/{quote}/marcar-pago', [AdminLeadController::class, 'marcarPago']);
         Route::get('quotes/{quote}/pdf/{type}', [PdfController::class, 'adminPdf']);
 
         Route::apiResource('providers', AdminProviderController::class);
@@ -45,6 +46,8 @@ Route::prefix('proveedor')->group(function () {
         Route::post('leads/{lead}/cotizar', [ProveedorController::class, 'submitQuote']);
         Route::get('ordenes', [ProveedorController::class, 'myOrders']);
         Route::post('ordenes/{quote}/concluir', [ProveedorController::class, 'conclude']);
+        Route::get('ordenes/{quote}/inventario', [ProveedorController::class, 'getInventario']);
+        Route::put('ordenes/{quote}/inventario', [ProveedorController::class, 'saveInventario']);
         Route::get('quotes/{quote}/pdf/{type}', [PdfController::class, 'providerPdf']);
     });
 });

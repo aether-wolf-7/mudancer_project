@@ -18,7 +18,11 @@ class Lead extends Model
         'estado_destino', 'localidad_destino', 'colonia_destino', 'piso_destino',
         'elevador_destino', 'acarreo_destino',
         'empaque', 'fecha_recoleccion', 'tiempo_estimado', 'modalidad', 'seguro',
-        'inventario', 'articulos_delicados', 'observaciones',
+        'inventario', 'inventario_recoleccion', 'articulos_delicados', 'observaciones',
         'publicada', 'adjudicada', 'concluida', 'vista',
+    ];
+
+    protected $casts = [
+        'inventario_recoleccion' => 'array',
     ];
 }

@@ -41,3 +41,15 @@ export async function downloadQuotePdf(quoteId, type, filename) {
   const url = `${apiBase()}/proveedor/quotes/${quoteId}/pdf/${type}`;
   await downloadAuthPdf(url, getProviderToken(), filename);
 }
+
+/** GET /api/proveedor/ordenes/{quote}/inventario */
+export async function getInventario(quoteId) {
+  const { data } = await proveedorApi.get(`/proveedor/ordenes/${quoteId}/inventario`);
+  return data?.data ?? { inventario_declarado: "", inventario_recoleccion: [] };
+}
+
+/** PUT /api/proveedor/ordenes/{quote}/inventario */
+export async function saveInventario(quoteId, items) {
+  const { data } = await proveedorApi.put(`/proveedor/ordenes/${quoteId}/inventario`, { items });
+  return data?.data ?? [];
+}

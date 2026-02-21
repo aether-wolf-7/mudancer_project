@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getOrdenes, concluirLead, downloadQuotePdf } from "../../api/adminApi";
+import { getOrdenes, concluirLead, downloadQuotePdf, marcarPago } from "../../api/adminApi";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -130,20 +130,48 @@ function LeadCard({ order, selected, onClick }) {
       <p style={{ margin: "0 0 6px", fontSize: "0.8375rem", fontWeight: 500, color: "#dc2626" }}>
         {[order.destination_state, order.destination_city].filter(Boolean).join(", ") || "—"}
       </p>
-      <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{fmtDate(order.ideal_date)}</span>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+        <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{fmtDate(order.ideal_date)}</span>
+        {order.assigned_quote && (
+          <span style={{
+            fontSize: "0.7rem", fontWeight: 700, borderRadius: 20, padding: "2px 8px",
+            background: order.assigned_quote.apartado_pagado ? "#dcfce7" : "#fef3c7",
+            color:  order.assigned_quote.apartado_pagado ? "#166534" : "#92400e",
+          }}>
+            {order.assigned_quote.apartado_pagado ? "✓ Apartado recibido" : "⏳ Apartado pendiente"}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
 // ── Order Detail View ─────────────────────────────────────────────────────────
 
-function OrderDetail({ order, onBack, onConcluded }) {
+function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
   const q = order.assigned_quote;
   const p = q?.provider;
 
-  const [confirming, setConfirming] = useState(false);
-  const [concluding, setConcluding] = useState(false);
+  const [confirming, setConfirming]     = useState(false);
+  const [concluding, setConcluding]     = useState(false);
   const [concludeError, setConcludeError] = useState(null);
+  const [pagoBusy, setPagoBusy]         = useState(false);
+  const [pagoError, setPagoError]       = useState(null);
+  const [apartadoPagado, setApartadoPagado] = useState(!!q?.apartado_pagado);
+
+  async function handleTogglePago() {
+    setPagoBusy(true);
+    setPagoError(null);
+    try {
+      const updated = await marcarPago(q.id);
+      setApartadoPagado(!!updated?.apartado_pagado);
+      if (onOrderUpdated) onOrderUpdated({ ...order, assigned_quote: { ...q, apartado_pagado: updated?.apartado_pagado } });
+    } catch (err) {
+      setPagoError(err.response?.data?.message || err.message || "Error");
+    } finally {
+      setPagoBusy(false);
+    }
+  }
 
   async function handleConclude() {
     setConcluding(true);
@@ -202,6 +230,36 @@ function OrderDetail({ order, onBack, onConcluded }) {
           <p style={{ fontWeight: 800, fontSize: 20, color: "#16a34a", margin: 0, flexShrink: 0 }}>
             {fmtMoney(q.precio_total)}
           </p>
+        </div>
+      )}
+
+      {/* ── Apartado payment status ── */}
+      {q && (
+        <div style={{ marginTop: 14, background: apartadoPagado ? "#f0fdf4" : "#fffbeb", border: `1.5px solid ${apartadoPagado ? "#86efac" : "#fcd34d"}`, borderRadius: 12, padding: "12px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <p style={{ margin: "0 0 2px", fontSize: 12, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>Apartado</p>
+              <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: apartadoPagado ? "#16a34a" : "#d97706" }}>
+                {apartadoPagado ? "✓ Pagado" : "⏳ Pendiente"}
+              </p>
+              <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>${Number(q.apartado).toLocaleString("es-MX", { minimumFractionDigits: 2 })} MXN</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleTogglePago}
+              disabled={pagoBusy}
+              style={{
+                padding: "8px 18px", fontSize: 13, fontWeight: 700, fontFamily: "inherit",
+                border: "none", borderRadius: 10, cursor: pagoBusy ? "not-allowed" : "pointer",
+                background: apartadoPagado ? "#fee2e2" : "#22c55e",
+                color: apartadoPagado ? "#dc2626" : "#fff",
+                transition: "background 0.2s",
+              }}
+            >
+              {pagoBusy ? "…" : apartadoPagado ? "Marcar como pendiente" : "Marcar apartado como recibido"}
+            </button>
+          </div>
+          {pagoError && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#dc2626" }}>{pagoError}</p>}
         </div>
       )}
 
@@ -316,6 +374,11 @@ export default function Orders() {
     setSelectedOrder(null);
   }
 
+  function handleOrderUpdated(updatedOrder) {
+    setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+    setSelectedOrder(updatedOrder);
+  }
+
   // ── Detail view ─────────────────────────────────────────────────────────
   if (selectedOrder) {
     return (
@@ -323,7 +386,7 @@ export default function Orders() {
         <h1 style={{ textAlign: "center", fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.12em", color: "#64748b", textTransform: "uppercase", margin: "0 0 1.25rem" }}>
           ORDER
         </h1>
-        <OrderDetail order={selectedOrder} onBack={() => setSelectedOrder(null)} onConcluded={handleConcluded} />
+        <OrderDetail order={selectedOrder} onBack={() => setSelectedOrder(null)} onConcluded={handleConcluded} onOrderUpdated={handleOrderUpdated} />
       </div>
     );
   }

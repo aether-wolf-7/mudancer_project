@@ -216,7 +216,7 @@
   @endif
   @endif
 
-  <div class="section-title">Inventario de Recolección (Llenar en Sitio)</div>
+  <div class="section-title">Inventario de Recolección</div>
   <table class="inv-table" cellpadding="0" cellspacing="0">
     <tr>
       <th style="width:6%">No.</th>
@@ -224,14 +224,30 @@
       <th style="width:14%">Condición</th>
       <th style="width:36%">Notas</th>
     </tr>
-    @for($i = 1; $i <= 20; $i++)
-    <tr @if($i % 2 == 0) class="alt" @endif>
-      <td style="text-align:center">{{ $i }}</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-      <td>&nbsp;</td>
-    </tr>
-    @endfor
+    @php $invItems = $lead->inventario_recoleccion ?? []; @endphp
+    @if(count($invItems) > 0)
+      @foreach($invItems as $item)
+      <tr @if($loop->even) class="alt" @endif>
+        <td style="text-align:center">{{ $item['numero'] ?? $loop->iteration }}</td>
+        <td>{{ $item['articulo'] ?? '' }}</td>
+        <td style="text-align:center">{{ $item['condicion'] ?? '' }}</td>
+        <td>{{ $item['notas'] ?? '' }}</td>
+      </tr>
+      @endforeach
+      @for($i = count($invItems) + 1; $i <= max(count($invItems) + 3, 20); $i++)
+      <tr @if($i % 2 == 0) class="alt" @endif>
+        <td style="text-align:center">{{ $i }}</td>
+        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+      </tr>
+      @endfor
+    @else
+      @for($i = 1; $i <= 20; $i++)
+      <tr @if($i % 2 == 0) class="alt" @endif>
+        <td style="text-align:center">{{ $i }}</td>
+        <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+      </tr>
+      @endfor
+    @endif
   </table>
 
   <div style="margin-top:8px; font-size:7pt; color:#777">

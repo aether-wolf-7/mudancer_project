@@ -109,6 +109,18 @@ class LeadController extends Controller
     }
 
     /**
+     * POST /api/admin/quotes/{quote}/marcar-pago
+     * Toggles apartado_pagado on the quote.
+     */
+    public function marcarPago(\App\Models\Quote $quote): JsonResponse
+    {
+        $quote->apartado_pagado = ! $quote->apartado_pagado;
+        $quote->save();
+
+        return response()->json(['data' => $quote]);
+    }
+
+    /**
      * GET /api/admin/cotizadas — published, not-adjudicated leads with their quotes (Quotes page).
      */
     public function quotedLeads(): JsonResponse
@@ -207,6 +219,7 @@ class LeadController extends Controller
             'notas'              => $quote->notas,
             'seleccionada'       => $quote->seleccionada,
             'cliente_interesada' => $quote->cliente_interesada,
+            'apartado_pagado'    => $quote->apartado_pagado,
             'vista'              => $quote->vista,
             'created_at'         => $quote->created_at?->toIso8601String(),
             'provider'           => $quote->provider ? [

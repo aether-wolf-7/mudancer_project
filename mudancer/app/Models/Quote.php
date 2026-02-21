@@ -9,6 +9,7 @@ class Quote extends Model
     protected $fillable = [
         'lead_id', 'provider_id', 'precio_total', 'apartado', 'anticipo', 'pago_final',
         'tarifa_seguro', 'notas', 'seleccionada', 'cliente_interesada', 'vista',
+        'apartado_pagado',
     ];
 
     public function lead()
