@@ -382,8 +382,8 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                   Elevator at origin
                 </label>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2, fontWeight: 500 }}>Haulage (m)</p>
-                  <Input name="acarreo_origen" type="number" value={lead.acarreo_origen} onChange={handleChange} placeholder="30" style={{ maxWidth: 100 }} />
+                  <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2, fontWeight: 500 }}>Acarreo origen</p>
+                  <Input name="acarreo_origen" type="text" value={lead.acarreo_origen ?? ""} onChange={handleChange} placeholder="e.g. A menos de 30 mts." />
                 </div>
               </div>
 
@@ -409,8 +409,8 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                   Elevator at destination
                 </label>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2, fontWeight: 500 }}>Haulage (m)</p>
-                  <Input name="acarreo_destino" type="number" value={lead.acarreo_destino} onChange={handleChange} placeholder="30" style={{ maxWidth: 100 }} />
+                  <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2, fontWeight: 500 }}>Acarreo destino</p>
+                  <Input name="acarreo_destino" type="text" value={lead.acarreo_destino ?? ""} onChange={handleChange} placeholder="e.g. Acarreo de 30 a 40 mts." />
                 </div>
               </div>
 

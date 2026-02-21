@@ -197,7 +197,7 @@ export default function LeadDetail() {
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Colonia</label><input name="colonia_origen" value={lead.colonia_origen ?? ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Piso</label><input name="piso_origen" value={lead.piso_origen ?? ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary" /></div>
             <div><label className="flex items-center gap-2"><input name="elevador_origen" type="checkbox" checked={!!lead.elevador_origen} onChange={handleChange} className="rounded text-primary focus:ring-primary" /> Elevador origen</label></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Acarreo origen</label><input name="acarreo_origen" type="number" min={0} value={lead.acarreo_origen ?? ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Acarreo origen</label><input name="acarreo_origen" type="text" value={lead.acarreo_origen ?? ""} onChange={handleChange} placeholder="e.g. A menos de 30 mts." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary" /></div>
           </div>
         </section>
 
@@ -209,7 +209,7 @@ export default function LeadDetail() {
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Colonia</label><input name="colonia_destino" value={lead.colonia_destino ?? ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary" /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Piso</label><input name="piso_destino" value={lead.piso_destino ?? ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary" /></div>
             <div><label className="flex items-center gap-2"><input name="elevador_destino" type="checkbox" checked={!!lead.elevador_destino} onChange={handleChange} className="rounded text-primary focus:ring-primary" /> Elevador destino</label></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Acarreo destino</label><input name="acarreo_destino" type="number" min={0} value={lead.acarreo_destino ?? ""} onChange={handleChange} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Acarreo destino</label><input name="acarreo_destino" type="text" value={lead.acarreo_destino ?? ""} onChange={handleChange} placeholder="e.g. Acarreo de 30 a 40 mts." className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary" /></div>
           </div>
         </section>
 

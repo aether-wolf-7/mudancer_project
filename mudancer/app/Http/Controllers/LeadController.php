@@ -33,6 +33,23 @@ class LeadController extends Controller
             $request->merge($input);
         }
 
+        // ── Resolve per-state city fields into origin_city / destination_city ─
+        // WPForms sends one conditional field per state (e.g. origin_Jalisco_city).
+        // Only the selected state's field has a value; the rest are empty.
+        $resolved = [];
+        foreach (['origin', 'destination'] as $side) {
+            $key = "{$side}_city";
+            if (empty(trim((string) $request->input($key, '')))) {
+                $city = $this->resolveStateCity($request->all(), $side);
+                if ($city !== null) {
+                    $resolved[$key] = $city;
+                }
+            }
+        }
+        if ($resolved) {
+            $request->merge($resolved);
+        }
+
         // ── Validate required fields ─────────────────────────────────────────
         $request->validate([
             'client_phone' => ['required', 'regex:/^[0-9\s\-\+\(\)]{7,20}$/'],
@@ -46,14 +63,15 @@ class LeadController extends Controller
         $phoneFull = strlen($phoneRaw) > 10 ? substr($phoneRaw, -10) : $phoneRaw;
         $phoneNorm = str_pad($phoneFull ?: '0000000000', 10, '0');
 
-        if (Lead::where('telefono_cliente', $phoneNorm)->exists()) {
-            Log::warning('Duplicate lead rejected', ['phone' => $phoneNorm]);
-            return response()->json([
-                'success' => false,
-                'error'   => 'duplicate',
-                'message' => 'A lead with this phone number already exists.',
-            ], 409);
-        }
+
+        // if (Lead::where('telefono_cliente', $phoneNorm)->exists()) {
+        //     Log::warning('Duplicate lead rejected', ['phone' => $phoneNorm]);
+        //     return response()->json([
+        //         'success' => false,
+        //         'error'   => 'duplicate',
+        //         'message' => 'A lead with this phone number already exists.',
+        //     ], 409);
+        // }
 
         $request->validate([
             'client_name'        => 'required|string|max:255',
@@ -95,12 +113,10 @@ class LeadController extends Controller
             $articulos = $articulos !== '' ? $articulos . ' || ' . $otro : $otro;
         }
 
-        // Build observaciones from optional fields
+        // Build observaciones from optional fields not stored in dedicated columns
         $obsParts = array_filter([
-            $request->filled('origin_haulage')    ? 'Origin haulage: '   . $request->input('origin_haulage')    : null,
-            $request->filled('destination_haulage')? 'Dest. haulage: '   . $request->input('destination_haulage') : null,
-            $request->filled('client_safe_mode')  ? 'Insurance mode: '  . $request->input('client_safe_mode')  : null,
-            $request->filled('client_packing')    ? 'Packing: '         . $request->input('client_packing')    : null,
+            $request->filled('client_safe_mode') ? 'Insurance mode: ' . $request->input('client_safe_mode') : null,
+            $request->filled('client_packing')   ? 'Packing: '        . $request->input('client_packing')   : null,
         ]);
         $observaciones = implode("\n", $obsParts) ?: null;
 
@@ -115,13 +131,13 @@ class LeadController extends Controller
                 'colonia_origen'     => '',
                 'piso_origen'        => $this->nullIfEmpty($request->input('origin_floor')),
                 'elevador_origen'    => $this->parseBool($request->input('origin_elevator')),
-                'acarreo_origen'     => $this->parseMeters($request->input('origin_haulage')),
+                'acarreo_origen'     => $this->nullIfEmpty($request->input('origin_haulage')),
                 'estado_destino'     => $request->input('destination_state'),
                 'localidad_destino'  => $request->input('destination_city'),
                 'colonia_destino'    => '',
                 'piso_destino'       => $this->nullIfEmpty($request->input('destination_floor')),
                 'elevador_destino'   => $this->parseBool($request->input('destination_elevator')),
-                'acarreo_destino'    => $this->parseMeters($request->input('destination_haulage')),
+                'acarreo_destino'    => $this->nullIfEmpty($request->input('destination_haulage')),
                 'empaque'            => (string) $request->input('client_packing', ''),
                 'fecha_recoleccion'  => $this->parseSpanishDate($dateStr),
                 'tiempo_estimado'    => '',
@@ -165,6 +181,34 @@ class LeadController extends Controller
             elseif (isset($byIndex[$i]))                                   $flat[$byIndex[$i]]   = $value;
         }
         return $flat;
+    }
+
+    /**
+     * WPForms sends one conditional city field per state, e.g.:
+     *   origin_Aguascalientes_city, origin_Jalisco_city, …
+     * Only the selected state's field contains a value; all others are empty.
+     * This method scans all keys matching "{side}_{State}_city" and returns
+     * the first non-empty value found.
+     */
+    private function resolveStateCity(array $input, string $side): ?string
+    {
+        $prefix = "{$side}_";
+        $suffix = '_city';
+
+        foreach ($input as $key => $value) {
+            if (
+                str_starts_with($key, $prefix) &&
+                str_ends_with($key, $suffix) &&
+                $key !== "{$side}_city"       // skip the generic field itself
+            ) {
+                $v = trim((string) ($value ?? ''));
+                if ($v !== '') {
+                    return $v;
+                }
+            }
+        }
+
+        return null;
     }
 
     private function nullIfEmpty(mixed $value): ?string
