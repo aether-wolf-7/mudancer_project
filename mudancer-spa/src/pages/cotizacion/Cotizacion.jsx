@@ -160,6 +160,27 @@ function QuoteCard({ quote, lead, onSelect, selecting }) {
         </p>
       )}
 
+      {/* Download PDF */}
+      {lead?.public_token && (
+        <a
+          href={`/api/cliente/quotes/${quote.id}/pdf?token=${lead.public_token}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            width: "100%", padding: "9px 0", borderRadius: 10, marginBottom: 10,
+            background: "#f1f5f9", color: "#1e3a5f",
+            fontSize: 13, fontWeight: 600, textDecoration: "none",
+            border: "1px solid #e2e8f0", transition: "background 0.15s",
+            boxSizing: "border-box",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
+        >
+          ⬇ Descargar Cotización PDF
+        </a>
+      )}
+
       {/* Actions */}
       {!isInterested ? (
         <button

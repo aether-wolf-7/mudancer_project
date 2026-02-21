@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getOrdenes, concluirLead } from "../../api/adminApi";
+import { getOrdenes, concluirLead, downloadQuotePdf } from "../../api/adminApi";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -50,31 +50,47 @@ function ProviderAvatar({ logo, nombre, size = 44 }) {
   );
 }
 
-// ── Document Button (dashed border, placeholder) ──────────────────────────────
+// ── PDF Download Button ───────────────────────────────────────────────────────
 
-function DocButton({ label }) {
+function PdfButton({ label, quoteId, type, filename }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState(null);
+
+  async function handleClick() {
+    setLoading(true);
+    setError(null);
+    try {
+      await downloadQuotePdf(quoteId, type, filename);
+    } catch (err) {
+      setError(err.message || "Download failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <button
-      type="button"
-      style={{
-        width: "100%",
-        padding: "14px 0",
-        background: "#fff",
-        border: "2px dashed #22c55e",
-        borderRadius: 12,
-        color: "#374151",
-        fontSize: 14,
-        fontWeight: 500,
-        cursor: "pointer",
-        textAlign: "center",
-        transition: "background 0.15s",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#f0fdf4")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "#fff")}
-      onClick={() => alert(`"${label}" PDF generation coming soon.`)}
-    >
-      {label}
-    </button>
+    <div>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={loading}
+        style={{
+          width: "100%", padding: "14px 0",
+          background: loading ? "#f0fdf4" : "#fff",
+          border: "2px solid #22c55e",
+          borderRadius: 12, color: "#374151",
+          fontSize: 14, fontWeight: 500,
+          cursor: loading ? "not-allowed" : "pointer",
+          textAlign: "center", transition: "background 0.15s",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        }}
+        onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#f0fdf4"; }}
+        onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = loading ? "#f0fdf4" : "#fff"; }}
+      >
+        {loading ? "⏳ Generating…" : `⬇ ${label}`}
+      </button>
+      {error && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#dc2626" }}>{error}</p>}
+    </div>
   );
 }
 
@@ -190,26 +206,30 @@ function OrderDetail({ order, onBack, onConcluded }) {
       )}
 
       {/* Supplier section */}
-      <div style={{ marginTop: 22 }}>
-        <p style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: "0 0 10px" }}>
-          Supplier
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <DocButton label="Supplier Quote" />
-          <DocButton label="Supplier Service Order" />
+      {q && (
+        <div style={{ marginTop: 22 }}>
+          <p style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: "0 0 10px" }}>
+            Supplier
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <PdfButton label="Supplier Quote (PDF)" quoteId={q.id} type="cotizacion" filename={`COTIZACION-${order.lead_id || order.id}.pdf`} />
+            <PdfButton label="Supplier Service Order (PDF)" quoteId={q.id} type="ods-proveedor" filename={`ODS-PROVEEDOR-${order.lead_id || order.id}.pdf`} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Client section */}
-      <div style={{ marginTop: 22 }}>
-        <p style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: "0 0 10px" }}>
-          Client
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <DocButton label="Client Quote" />
-          <DocButton label="Client Service Order" />
+      {q && (
+        <div style={{ marginTop: 22 }}>
+          <p style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: "0 0 10px" }}>
+            Client
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <PdfButton label="Client Quote (PDF)" quoteId={q.id} type="cotizacion" filename={`COTIZACION-CLIENTE-${order.lead_id || order.id}.pdf`} />
+            <PdfButton label="Client Service Order (PDF)" quoteId={q.id} type="ods-cliente" filename={`ODS-CLIENTE-${order.lead_id || order.id}.pdf`} />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Quote notes */}
       {q?.notas && (

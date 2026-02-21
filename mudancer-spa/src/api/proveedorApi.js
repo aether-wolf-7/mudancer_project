@@ -1,4 +1,5 @@
-import { proveedorApi } from "./proveedorClient";
+import { proveedorApi, getProviderToken } from "./proveedorClient";
+import { downloadAuthPdf, apiBase } from "./pdfUtils.js";
 
 export async function login(email, password) {
   const { data } = await proveedorApi.post("/proveedor/login", { email, password });
@@ -30,4 +31,13 @@ export async function getOrdenes() {
 export async function concludeOrder(quoteId) {
   const { data } = await proveedorApi.post(`/proveedor/ordenes/${quoteId}/concluir`);
   return data;
+}
+
+/**
+ * Download a PDF document for an assigned quote (provider).
+ * type: 'cotizacion' | 'ods-proveedor'
+ */
+export async function downloadQuotePdf(quoteId, type, filename) {
+  const url = `${apiBase()}/proveedor/quotes/${quoteId}/pdf/${type}`;
+  await downloadAuthPdf(url, getProviderToken(), filename);
 }

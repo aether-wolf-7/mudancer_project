@@ -2,7 +2,8 @@
  * Admin API using axios client (sends Bearer token from localStorage).
  */
 
-import api from "./client";
+import api, { getAdminToken } from "./client";
+import { downloadAuthPdf, apiBase } from "./pdfUtils.js";
 
 export async function login(identifier, password) {
   const { data } = await api.post("/admin/login", { identifier, password });
@@ -78,4 +79,13 @@ export async function getOrdenes() {
 export async function assignQuote(quoteId) {
   const { data } = await api.post(`/admin/quotes/${quoteId}/asignar`);
   return data ?? null;
+}
+
+/**
+ * Download a PDF document for a quote (admin).
+ * type: 'cotizacion' | 'ods-cliente' | 'ods-proveedor'
+ */
+export async function downloadQuotePdf(quoteId, type, filename) {
+  const url = `${apiBase()}/admin/quotes/${quoteId}/pdf/${type}`;
+  await downloadAuthPdf(url, getAdminToken(), filename);
 }

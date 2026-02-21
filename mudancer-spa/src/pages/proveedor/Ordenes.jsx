@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getOrdenes } from "../../api/proveedorApi";
+import { getOrdenes, downloadQuotePdf } from "../../api/proveedorApi";
 
 const ADMIN_WA = (import.meta.env.VITE_WHATSAPP_ADMIN ?? "").replace(/\D/g, "");
 
@@ -11,6 +11,38 @@ function buildConcluirWaUrl(quote) {
     `Hola, he concluido el servicio de mudanza.\nID de solicitud: ${leadId}${cliente ? `\nCliente: ${cliente}` : ""}\nPor favor, ¿puedes marcar el servicio como concluido?`
   );
   return `https://wa.me/${ADMIN_WA}?text=${msg}`;
+}
+
+function ProviderPdfBtn({ quoteId, type, label, leadId }) {
+  const [loading, setLoading] = useState(false);
+  const [err, setErr]         = useState(null);
+
+  async function handleClick() {
+    setLoading(true);
+    setErr(null);
+    try {
+      const filename = `${type.toUpperCase()}-${leadId || quoteId}.pdf`;
+      await downloadQuotePdf(quoteId, type, filename);
+    } catch (e) {
+      setErr(e.message || "Error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <span>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={loading}
+        className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+      >
+        {loading ? "⏳…" : `⬇ ${label}`}
+      </button>
+      {err && <span className="text-red-500 text-xs ml-1">{err}</span>}
+    </span>
+  );
 }
 
 export default function Ordenes() {
@@ -95,18 +127,8 @@ export default function Ordenes() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
-                        <a
-                          href="#"
-                          className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                        >
-                          Cotización PDF
-                        </a>
-                        <a
-                          href="#"
-                          className="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                        >
-                          ODS PDF
-                        </a>
+                        <ProviderPdfBtn quoteId={quote.id} type="cotizacion" label="Cotización PDF" leadId={quote.lead?.lead_id} />
+                        <ProviderPdfBtn quoteId={quote.id} type="ods-proveedor" label="ODS PDF" leadId={quote.lead?.lead_id} />
                         {buildConcluirWaUrl(quote) ? (
                           <a
                             href={buildConcluirWaUrl(quote)}

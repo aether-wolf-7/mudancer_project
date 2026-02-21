@@ -54,6 +54,7 @@ class ClienteController extends Controller
             'lead'   => [
                 'id'               => $lead->id,
                 'lead_id'          => $lead->lead_id,
+                'public_token'     => $lead->public_token,
                 'nombre_cliente'   => $lead->nombre_cliente,
                 'estado_origen'    => $lead->estado_origen,
                 'localidad_origen' => $lead->localidad_origen,
