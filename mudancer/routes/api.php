@@ -42,6 +42,7 @@ Route::prefix('proveedor')->group(function () {
 
     Route::middleware(['auth:sanctum', 'provider.auth'])->group(function () {
         Route::get('leads', [ProveedorController::class, 'availableLeads']);
+        Route::get('leads/adjudicadas', [ProveedorController::class, 'adjudicatedLeads']);
         Route::get('leads/{lead}', [ProveedorController::class, 'showLead']);
         Route::post('leads/{lead}/cotizar', [ProveedorController::class, 'submitQuote']);
         Route::get('ordenes', [ProveedorController::class, 'myOrders']);

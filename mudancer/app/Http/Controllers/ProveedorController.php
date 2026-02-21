@@ -20,16 +20,63 @@ class ProveedorController extends Controller
             ->where('adjudicada', false)
             ->orderBy('created_at', 'desc')
             ->select([
-                'id',
-                'lead_id',
-                'nombre_cliente',
-                'estado_origen',
-                'localidad_origen',
-                'estado_destino',
+                'id', 'lead_id', 'nombre_cliente',
+                'estado_origen', 'localidad_origen',
+                'estado_destino', 'localidad_destino',
                 'fecha_recoleccion',
             ])
             ->withCount('quotes')
             ->get();
+
+        return response()->json(['data' => $leads]);
+    }
+
+    /**
+     * GET /api/proveedor/leads/adjudicadas
+     * Leads where adjudicada=true AND this provider's quote was selected.
+     */
+    public function adjudicatedLeads(): JsonResponse
+    {
+        $provider = $this->getProviderForUser();
+        if (! $provider) {
+            return response()->json(['message' => 'Provider profile not found.'], 403);
+        }
+
+        $leads = Lead::query()
+            ->where('adjudicada', true)
+            ->whereHas('quotes', function ($q) use ($provider) {
+                $q->where('provider_id', $provider->id)
+                  ->where('seleccionada', true);
+            })
+            ->with(['quotes' => function ($q) use ($provider) {
+                $q->where('provider_id', $provider->id)
+                  ->where('seleccionada', true)
+                  ->select(['id', 'lead_id', 'precio_total', 'seleccionada']);
+            }])
+            ->orderBy('created_at', 'desc')
+            ->select([
+                'id', 'lead_id', 'nombre_cliente',
+                'estado_origen', 'localidad_origen',
+                'estado_destino', 'localidad_destino',
+                'fecha_recoleccion', 'concluida',
+            ])
+            ->get()
+            ->map(function (Lead $lead) {
+                $quote = $lead->quotes->first();
+                return [
+                    'id'               => $lead->id,
+                    'lead_id'          => $lead->lead_id,
+                    'nombre_cliente'   => $lead->nombre_cliente,
+                    'estado_origen'    => $lead->estado_origen,
+                    'localidad_origen' => $lead->localidad_origen,
+                    'estado_destino'   => $lead->estado_destino,
+                    'localidad_destino'=> $lead->localidad_destino,
+                    'fecha_recoleccion'=> $lead->fecha_recoleccion,
+                    'concluida'        => $lead->concluida,
+                    'precio_total'     => $quote?->precio_total,
+                    'quote_id'         => $quote?->id,
+                ];
+            });
 
         return response()->json(['data' => $leads]);
     }

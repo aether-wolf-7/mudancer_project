@@ -305,9 +305,21 @@ function QuotesScreen({ lead, quotes, onReset }) {
       )}
 
       {localQuotes.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "2rem 0", color: "#9ca3af" }}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
-          <p>Aún no hay propuestas para tu solicitud. Regresa más tarde.</p>
+        <div style={{
+          background: "#f0f9ff", border: "1.5px solid #bae6fd",
+          borderRadius: 16, padding: "28px 20px", textAlign: "center",
+        }}>
+          <div style={{ fontSize: 44, marginBottom: 12 }}>🔍</div>
+          <p style={{ fontWeight: 700, fontSize: 16, color: "#0369a1", margin: "0 0 8px" }}>
+            ¡Tu solicitud fue aprobada!
+          </p>
+          <p style={{ fontSize: 14, color: "#0c4a6e", margin: "0 0 6px", lineHeight: 1.6 }}>
+            Estamos buscando las mejores empresas de mudanza para tu servicio.
+          </p>
+          <p style={{ fontSize: 13, color: "#64748b", margin: 0, lineHeight: 1.5 }}>
+            Las propuestas aparecerán aquí en cuanto las empresas las envíen.
+            <br />Por favor regresa en unas horas.
+          </p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

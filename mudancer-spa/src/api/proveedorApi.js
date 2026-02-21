@@ -6,6 +6,12 @@ export async function login(email, password) {
   return data;
 }
 
+export async function getAdjudicatedLeads() {
+  const { data } = await proveedorApi.get("/proveedor/leads/adjudicadas");
+  const list = data?.data;
+  return Array.isArray(list) ? list : [];
+}
+
 export async function getLeads() {
   const { data } = await proveedorApi.get("/proveedor/leads");
   const list = data?.data;
