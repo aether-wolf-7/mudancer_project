@@ -52,6 +52,10 @@ function App() {
       {/* Public lead deep-link: /leads/:leadId/:token → resolves to /proveedor/leads/:id */}
       <Route path="/leads/:leadId/:token" element={<LeadRedirect />} />
 
+      {/* /administrator alias — matches the URL documented in the client requirements */}
+      <Route path="/administrator" element={<Navigate to="/admin/login" replace />} />
+      <Route path="/administrator/*" element={<Navigate to="/admin/login" replace />} />
+
       <Route path="*" element={<Navigate to="/admin/login" replace />} />
     </Routes>
   );

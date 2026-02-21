@@ -254,6 +254,50 @@ function QuoteModal({ quote, lead, onClose, onAssign }) {
   );
 }
 
+// ── Copy Link Button ──────────────────────────────────────────────────────────
+
+function CopyLinkButton({ url }) {
+  const [copied, setCopied] = useState(false);
+  if (!url) return null;
+
+  function handleCopy(e) {
+    e.stopPropagation(); // Don't trigger the card click
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {
+      // Fallback for browsers without clipboard API
+      const ta = document.createElement("textarea");
+      ta.value = url;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      title={copied ? "Copied!" : "Copy provider link"}
+      style={{
+        display: "flex", alignItems: "center", gap: 4,
+        padding: "3px 9px", borderRadius: 8,
+        border: copied ? "1px solid #22c55e" : "1px solid #e2e8f0",
+        background: copied ? "#f0fdf4" : "#f8fafc",
+        color: copied ? "#16a34a" : "#64748b",
+        fontSize: 11, fontWeight: 600, cursor: "pointer",
+        transition: "all 0.15s", whiteSpace: "nowrap",
+        flexShrink: 0,
+      }}
+    >
+      {copied ? "✓ Copiado" : "🔗 Copiar enlace"}
+    </button>
+  );
+}
+
 // ── Lead Summary Card (compact) ───────────────────────────────────────────────
 
 function LeadSummaryCard({ lead, selected, onClick, isNew }) {
@@ -296,18 +340,21 @@ function LeadSummaryCard({ lead, selected, onClick, isNew }) {
       <p style={{ margin: "0 0 6px", fontSize: "0.8375rem", fontWeight: 500, color: "#dc2626" }}>
         {[lead.destination_state, lead.destination_city].filter(Boolean).join(", ") || "—"}
       </p>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{fmtDate(lead.ideal_date)}</span>
-        {(lead.quotes_count ?? 0) > 0 && (
-          <span style={{
-            fontSize: "0.72rem", fontWeight: 700,
-            background: (lead.new_quotes ?? 0) > 0 ? "#fef3c7" : "#f3f4f6",
-            color: (lead.new_quotes ?? 0) > 0 ? "#92400e" : "#6b7280",
-            borderRadius: 20, padding: "2px 8px",
-          }}>
-            {lead.quotes_count} quote{lead.quotes_count !== 1 ? "s" : ""}
-          </span>
-        )}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{fmtDate(lead.ideal_date)}</span>
+          {(lead.quotes_count ?? 0) > 0 && (
+            <span style={{
+              fontSize: "0.72rem", fontWeight: 700,
+              background: (lead.new_quotes ?? 0) > 0 ? "#fef3c7" : "#f3f4f6",
+              color: (lead.new_quotes ?? 0) > 0 ? "#92400e" : "#6b7280",
+              borderRadius: 20, padding: "2px 8px",
+            }}>
+              {lead.quotes_count} quote{lead.quotes_count !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        <CopyLinkButton url={lead.public_url} />
       </div>
     </div>
   );

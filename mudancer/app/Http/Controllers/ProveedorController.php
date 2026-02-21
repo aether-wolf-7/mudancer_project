@@ -132,14 +132,18 @@ class ProveedorController extends Controller
             $pagoFinal = round($precio * 0.4, 2);
         }
 
+        // Insurance fee: 1.5% of the declared insured value on the lead (not of the quote price)
+        $tarifaSeguro = ($lead->seguro > 0) ? round((float) $lead->seguro * 0.015, 2) : null;
+
         $quote = Quote::create([
-            'lead_id'      => $lead->id,
-            'provider_id'  => $provider->id,
-            'precio_total' => $precio,
-            'apartado'     => $apartado,
-            'anticipo'     => $anticipo,
-            'pago_final'   => $pagoFinal,
-            'notas'        => $validated['notas'] ?? null,
+            'lead_id'       => $lead->id,
+            'provider_id'   => $provider->id,
+            'precio_total'  => $precio,
+            'apartado'      => $apartado,
+            'anticipo'      => $anticipo,
+            'pago_final'    => $pagoFinal,
+            'tarifa_seguro' => $tarifaSeguro,
+            'notas'         => $validated['notas'] ?? null,
         ]);
 
         return response()->json(['data' => $quote], 201);
@@ -219,7 +223,7 @@ class ProveedorController extends Controller
     }
 
     /**
-     * POST /api/proveedor/ordenes/{quote}/concluir — log and return success.
+     * POST /api/proveedor/ordenes/{quote}/concluir — log, notify admin via WA link, return success.
      */
     public function conclude(Quote $quote): JsonResponse
     {
@@ -231,11 +235,29 @@ class ProveedorController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
+        $lead = $quote->lead;
+
         \Log::info('Provider concluded service', [
-            'quote_id' => $quote->id,
-            'lead_id' => $quote->lead_id,
+            'quote_id'    => $quote->id,
+            'lead_id'     => $lead?->lead_id ?? $quote->lead_id,
             'provider_id' => $provider->id,
         ]);
+
+        // WhatsApp notification to admin
+        $adminWaNumber = preg_replace('/[^0-9]/', '', (string) env('ADMIN_WHATSAPP_NUMBER', ''));
+        if ($adminWaNumber !== '') {
+            $provNombre = $provider->nombre ?? 'Proveedor';
+            $leadId     = $lead?->lead_id ?? "#{$quote->lead_id}";
+            $cliente    = $lead?->nombre_cliente ?? 'el cliente';
+            $msgText    = implode("\n", [
+                "✅ *Servicio concluido*",
+                "Proveedor: {$provNombre}",
+                "Lead ID: {$leadId} | Cliente: {$cliente}",
+                "El proveedor indica que el servicio ha finalizado. Por favor confirma y cierra el expediente.",
+            ]);
+            $waUrl = 'https://wa.me/' . $adminWaNumber . '?text=' . rawurlencode($msgText);
+            \Log::info("📱 Admin WA conclusion notification ready — click link to open WhatsApp", ['wa_url' => $waUrl]);
+        }
 
         return response()->json(['message' => 'Success']);
     }
