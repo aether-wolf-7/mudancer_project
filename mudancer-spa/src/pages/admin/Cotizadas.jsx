@@ -70,7 +70,7 @@ function ConfirmDialog({ message, onConfirm, onCancel, loading }) {
       >
         <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
         <h3 style={{ fontWeight: 700, fontSize: 17, color: "#111827", margin: "0 0 8px" }}>
-          Assign this quote?
+          ¿Asignar esta cotización?
         </h3>
         <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 22px", lineHeight: 1.5 }}>
           {message}
@@ -85,7 +85,7 @@ function ConfirmDialog({ message, onConfirm, onCancel, loading }) {
               color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer",
             }}
           >
-            Cancel
+            Cancelar
           </button>
           <button
             onClick={onConfirm}
@@ -97,7 +97,7 @@ function ConfirmDialog({ message, onConfirm, onCancel, loading }) {
               cursor: loading ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Assigning…" : "Confirm"}
+            {loading ? "Asignando…" : "Confirmar"}
           </button>
         </div>
       </div>
@@ -149,7 +149,7 @@ function QuoteModal({ quote, lead, onClose, onAssign }) {
       >
         {/* Header */}
         <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid #f3f4f6", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h2 style={{ fontWeight: 700, fontSize: 17, margin: 0, color: "#111827" }}>Quote Details</h2>
+          <h2 style={{ fontWeight: 700, fontSize: 17, margin: 0, color: "#111827" }}>Detalle de Cotización</h2>
           <button onClick={onClose} style={{ background: "#f3f4f6", border: "none", borderRadius: 8, width: 30, height: 30, cursor: "pointer", fontSize: 18, color: "#6b7280", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
         </div>
 
@@ -174,11 +174,11 @@ function QuoteModal({ quote, lead, onClose, onAssign }) {
           {/* Price breakdown */}
           <div style={{ borderRadius: 12, border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: 18 }}>
             {[
-              ["Total Price",     quote.precio_total,  true],
-              ["Deposit",         quote.apartado,      false],
-              ["Advance Payment", quote.anticipo,       false],
-              ["Final Payment",   quote.pago_final,    false],
-              ["Insurance Rate",  quote.tarifa_seguro, false],
+              ["Precio total",       quote.precio_total,  true],
+              ["Apartado",           quote.apartado,      false],
+              ["Anticipo",           quote.anticipo,      false],
+              ["Pago a la llegada",  quote.pago_final,    false],
+              ["Tarifa de seguro",   quote.tarifa_seguro, false],
             ].map(([label, val, bold]) => (
               <div
                 key={label}
@@ -208,7 +208,7 @@ function QuoteModal({ quote, lead, onClose, onAssign }) {
           {/* Customer interest badge */}
           {quote.cliente_interesada && (
             <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 10, padding: "8px 14px", marginBottom: 18, fontSize: 13, color: "#92400e", display: "flex", alignItems: "center", gap: 8 }}>
-              ⭐ Customer has shown interest in this quote
+              ⭐ El cliente seleccionó esta propuesta
             </div>
           )}
         </div>
@@ -223,7 +223,7 @@ function QuoteModal({ quote, lead, onClose, onAssign }) {
               color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer",
             }}
           >
-            ← Back
+            ← Volver
           </button>
           <button
             onClick={() => setShowConfirm(true)}
@@ -237,14 +237,14 @@ function QuoteModal({ quote, lead, onClose, onAssign }) {
               cursor: (assigning || quote.seleccionada) ? "not-allowed" : "pointer",
             }}
           >
-            {quote.seleccionada ? "✓ Already Assigned" : assigning ? "Assigning…" : "Assign"}
+            {quote.seleccionada ? "✓ Ya asignada" : assigning ? "Asignando…" : "Asignar"}
           </button>
         </div>
       </div>
 
       {showConfirm && (
         <ConfirmDialog
-          message={`Assign this lead to ${p?.nombre ?? "this supplier"}? This will move the lead to the Orders page.`}
+          message={`¿Asignar este lead a ${p?.nombre ?? "este proveedor"}? El lead pasará a la página de Órdenes.`}
           onConfirm={doAssign}
           onCancel={() => setShowConfirm(false)}
           loading={assigning}
@@ -326,7 +326,7 @@ function LeadSummaryCard({ lead, selected, onClick, isNew }) {
     >
       <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "0.25rem", marginBottom: "0.375rem" }}>
         {isNew && (
-          <span style={{ fontSize: "0.65rem", fontWeight: 700, background: "#f59e0b", color: "#fff", borderRadius: 20, padding: "2px 7px", marginRight: 4, letterSpacing: "0.05em" }}>NEW</span>
+          <span style={{ fontSize: "0.65rem", fontWeight: 700, background: "#f59e0b", color: "#fff", borderRadius: 20, padding: "2px 7px", marginRight: 4, letterSpacing: "0.05em" }}>NUEVO</span>
         )}
         <span style={{ fontSize: "0.875rem", fontWeight: 600, color: "#1e293b" }}>{fmtDate(lead.created_at)}</span>
         <span style={{ color: "#94a3b8", fontSize: "0.8rem" }}>|</span>
@@ -410,10 +410,10 @@ function QuoteCard({ quote, onClick }) {
           {fmtMoney(quote.precio_total)}
         </p>
         {isSelected && (
-          <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#16a34a", letterSpacing: "0.04em" }}>ASSIGNED</span>
+          <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#16a34a", letterSpacing: "0.04em" }}>ASIGNADA</span>
         )}
         {isInterested && !isSelected && (
-          <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#d97706", letterSpacing: "0.04em" }}>CLIENT ★</span>
+          <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "#d97706", letterSpacing: "0.04em" }}>CLIENTE ★</span>
         )}
       </div>
     </div>
@@ -506,7 +506,7 @@ export default function Cotizadas() {
             marginBottom: 14, padding: 0,
           }}
         >
-          ← Back to Quotes
+          ← Volver a Cotizadas
         </button>
 
         {/* Selected lead summary */}
@@ -515,15 +515,15 @@ export default function Cotizadas() {
         {/* Quotes section */}
         <div style={{ margin: "18px 0 10px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ fontWeight: 700, fontSize: 13, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
-            Supplier Quotes
+            Cotizaciones de Proveedores
           </p>
-          <span style={{ fontSize: 12, color: "#94a3b8" }}>{sorted.length} quote{sorted.length !== 1 ? "s" : ""}</span>
+          <span style={{ fontSize: 12, color: "#94a3b8" }}>{sorted.length} cotización{sorted.length !== 1 ? "es" : ""}</span>
         </div>
 
         {sorted.length === 0 ? (
           <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
             <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📭</div>
-            No supplier quotes yet.
+            Aún no hay cotizaciones de proveedores.
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
@@ -556,7 +556,7 @@ export default function Cotizadas() {
 
       {/* Title */}
       <h1 style={{ textAlign: "center", fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.12em", color: "#64748b", textTransform: "uppercase", margin: "0 0 1rem" }}>
-        QUOTED
+        COTIZADAS
         {newCount > 0 && (
           <span style={{ marginLeft: 8, background: "#f59e0b", color: "#fff", borderRadius: 20, fontSize: "0.7rem", padding: "2px 8px", fontWeight: 700, verticalAlign: "middle" }}>
             {newCount} new
@@ -587,19 +587,19 @@ export default function Cotizadas() {
       {/* Content */}
       {loading ? (
         <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
-          <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>Loading…
+          <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>Cargando…
         </div>
       ) : error ? (
         <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "1rem", textAlign: "center" }}>{error}</div>
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📄</div>
-          {q ? `No quotes found for "${search}"` : "No published leads yet."}
+          {q ? `Sin resultados para "${search}"` : "No hay leads publicados aún."}
         </div>
       ) : (
         <>
           <p style={{ margin: "0 0 0.75rem", fontSize: "0.8rem", color: "#94a3b8" }}>
-            {filtered.length} lead{filtered.length !== 1 ? "s" : ""} — click to view quotes
+            {filtered.length} lead{filtered.length !== 1 ? "s" : ""} — haz clic para ver cotizaciones
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
             {filtered.map((lead) => (

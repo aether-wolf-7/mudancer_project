@@ -749,7 +749,7 @@ export default function Providers() {
       ) : providers.length === 0 ? (
         <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🔍</div>
-          {search ? `No suppliers found for "${search}"` : "No suppliers registered yet."}
+          {search ? `Sin resultados para "${search}"` : "No hay proveedores registrados aún."}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>

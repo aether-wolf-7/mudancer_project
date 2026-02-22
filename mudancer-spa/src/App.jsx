@@ -12,6 +12,7 @@ import ProveedorLogin from "./pages/proveedor/Login";
 import ProveedorDashboard from "./pages/proveedor/Dashboard";
 import ProveedorLeadDetail from "./pages/proveedor/LeadDetail";
 import Ordenes from "./pages/proveedor/Ordenes";
+import ProveedorPerfil from "./pages/proveedor/Perfil";
 import Cotizacion from "./pages/cotizacion/Cotizacion";
 import LeadRedirect from "./pages/LeadRedirect";
 
@@ -43,6 +44,7 @@ function App() {
           <Route path="dashboard" element={<ProveedorDashboard />} />
           <Route path="leads/:id" element={<ProveedorLeadDetail />} />
           <Route path="ordenes"   element={<Ordenes />} />
+          <Route path="perfil"    element={<ProveedorPerfil />} />
         </Route>
         <Route index element={<Navigate to="/proveedor/dashboard" replace />} />
       </Route>

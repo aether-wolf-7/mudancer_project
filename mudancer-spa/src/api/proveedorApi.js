@@ -6,6 +6,11 @@ export async function login(email, password) {
   return data;
 }
 
+export async function getPerfil() {
+  const { data } = await proveedorApi.get("/proveedor/perfil");
+  return data?.data ?? null;
+}
+
 export async function getAdjudicatedLeads() {
   const { data } = await proveedorApi.get("/proveedor/leads/adjudicadas");
   const list = data?.data;

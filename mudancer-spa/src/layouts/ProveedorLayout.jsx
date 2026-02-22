@@ -40,7 +40,16 @@ export default function ProveedorLayout() {
               >
                 ORDENES
               </Link>
-              <span className="px-3 py-2 text-sm font-medium text-gray-400 cursor-default">AYUDA</span>
+              <Link
+                to="/proveedor/perfil"
+                className={`px-3 py-2 rounded-lg text-sm font-semibold transition ${
+                  location.pathname === "/proveedor/perfil"
+                    ? "bg-primary-100 text-primary"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                PERFIL
+              </Link>
             </div>
             <button
               type="button"

@@ -11,6 +11,28 @@ use Illuminate\Http\Request;
 class ProveedorController extends Controller
 {
     /**
+     * GET /api/proveedor/perfil — authenticated provider's own profile.
+     */
+    public function perfil(): JsonResponse
+    {
+        $provider = $this->getProviderForUser();
+        if (! $provider) {
+            return response()->json(['message' => 'Perfil no encontrado.'], 404);
+        }
+
+        return response()->json(['data' => [
+            'nombre'        => $provider->nombre,
+            'email'         => $provider->email,
+            'telefono'      => $provider->telefono,
+            'rfc'           => $provider->rfc,
+            'direccion'     => $provider->direccion,
+            'responsable'   => $provider->responsable,
+            'reputacion'    => $provider->reputacion,
+            'logo'          => $provider->logo,
+        ]]);
+    }
+
+    /**
      * GET /api/proveedor/leads — available leads: publicada=true, adjudicada=false, newest first.
      */
     public function availableLeads(): JsonResponse

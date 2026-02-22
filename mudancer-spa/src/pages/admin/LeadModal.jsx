@@ -138,7 +138,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
       >
         <div style={{ fontSize: 40, marginBottom: 12 }}>📢</div>
         <h3 style={{ fontWeight: 700, fontSize: 17, color: "#111827", margin: "0 0 8px" }}>
-          Publish this lead?
+          ¿Publicar este lead?
         </h3>
         <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 22px", lineHeight: 1.5 }}>
           {message}
@@ -152,7 +152,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
               color: "#374151", fontSize: 14, fontWeight: 600, cursor: "pointer",
             }}
           >
-            Cancel
+            Cancelar
           </button>
           <button
             onClick={onConfirm}
@@ -162,7 +162,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }) {
               color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer",
             }}
           >
-            Publish
+            Publicar
           </button>
         </div>
       </div>
@@ -546,11 +546,11 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                 {/* Publish */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <p style={{ fontWeight: 600, fontSize: 14, color: "#374151", margin: 0 }}>Publish</p>
+                    <p style={{ fontWeight: 600, fontSize: 14, color: "#374151", margin: 0 }}>Publicar</p>
                     <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
                       {lead.publicada
-                        ? "Published — visible on Quotes page"
-                        : "Move this lead to the Quotes page"}
+                        ? "Publicada — visible en el panel de proveedores"
+                        : "Mover este lead a la página de Cotizadas"}
                     </p>
                   </div>
                   <Toggle
@@ -560,12 +560,12 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                   />
                 </div>
 
-                {/* Mark as awarded */}
+                {/* Marcar como adjudicada */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <p style={{ fontWeight: 600, fontSize: 14, color: "#374151", margin: 0 }}>Mark as awarded</p>
+                    <p style={{ fontWeight: 600, fontSize: 14, color: "#374151", margin: 0 }}>Marcar como adjudicada</p>
                     <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
-                      {lead.adjudicada ? "Awarded" : "A supplier has been selected"}
+                      {lead.adjudicada ? "Adjudicada — proveedores ya no pueden acceder" : "Asignar definitivamente a un proveedor"}
                     </p>
                   </div>
                   <Toggle
@@ -575,12 +575,12 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                   />
                 </div>
 
-                {/* Mark as completed */}
+                {/* Marcar como concluida */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <div>
-                    <p style={{ fontWeight: 600, fontSize: 14, color: "#374151", margin: 0 }}>Mark as completed</p>
+                    <p style={{ fontWeight: 600, fontSize: 14, color: "#374151", margin: 0 }}>Marcar como concluida</p>
                     <p style={{ fontSize: 12, color: "#9ca3af", margin: 0 }}>
-                      {lead.concluida ? "Completed" : "Moving job finished"}
+                      {lead.concluida ? "Concluida — servicio finalizado" : "El servicio de mudanza ha terminado"}
                     </p>
                   </div>
                   <Toggle
@@ -598,7 +598,7 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
       {/* Publish confirmation dialog */}
       {showConfirm && (
         <ConfirmDialog
-          message="This lead will be moved to the Quotes page and a unique public link will be generated. This action cannot be undone."
+          message="Este lead se moverá a la página de Cotizadas y se generará un enlace público único. Esta acción no se puede deshacer."
           onConfirm={doPublish}
           onCancel={() => setShowConfirm(false)}
         />

@@ -37,7 +37,7 @@ function LeadCard({ lead, onClick, isNew }) {
       {/* Top row: date | ID | name */}
       <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "0.25rem", marginBottom: "0.375rem" }}>
         {isNew && (
-          <span style={{ fontSize: "0.65rem", fontWeight: 700, background: "#22c55e", color: "#fff", borderRadius: 20, padding: "2px 7px", marginRight: 4, letterSpacing: "0.05em" }}>NEW</span>
+          <span style={{ fontSize: "0.65rem", fontWeight: 700, background: "#22c55e", color: "#fff", borderRadius: 20, padding: "2px 7px", marginRight: 4, letterSpacing: "0.05em" }}>NUEVO</span>
         )}
         <span style={{ fontSize: "0.9375rem", fontWeight: isNew ? 700 : 500, color: "#1e293b" }}>
           {createdDate}
@@ -144,7 +144,7 @@ export default function Dashboard() {
 
       {/* Title */}
       <h1 style={{ textAlign: "center", fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.12em", color: "#64748b", textTransform: "uppercase", margin: "0 0 1rem" }}>
-        NEW LEADS
+        NUEVOS LEADS
         {newCount > 0 && (
           <span style={{ marginLeft: 8, background: "#22c55e", color: "#fff", borderRadius: 20, fontSize: "0.7rem", padding: "2px 8px", fontWeight: 700, verticalAlign: "middle" }}>
             {newCount} new
@@ -182,7 +182,7 @@ export default function Dashboard() {
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📋</div>
-          {q ? `No leads found for "${search}"` : "No new leads."}
+          {q ? `Sin resultados para "${search}"` : "No hay nuevos leads aún."}
         </div>
       ) : (
         <>

@@ -269,7 +269,7 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
           marginBottom: 14, padding: 0,
         }}
       >
-        ← Back to Orders
+        ← Volver a Órdenes
       </button>
 
       {/* Lead summary card */}
@@ -337,12 +337,12 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
       {q && (
         <div style={{ marginTop: 22 }}>
           <p style={{ fontSize: 12, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, margin: "0 0 10px" }}>
-            Documents
+            Documentos
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <DocRow label="Quote (Cotización)" quoteId={q.id} type="cotizacion" filename={`COTIZACION-${order.lead_id || order.id}.pdf`} />
-            <DocRow label="Client Service Order (ODS Cliente)" quoteId={q.id} type="ods-cliente" filename={`ODS-CLIENTE-${order.lead_id || order.id}.pdf`} />
-            <DocRow label="Provider Service Order (ODS Proveedor)" quoteId={q.id} type="ods-proveedor" filename={`ODS-PROVEEDOR-${order.lead_id || order.id}.pdf`} />
+            <DocRow label="Cotización" quoteId={q.id} type="cotizacion" filename={`COTIZACION-${order.lead_id || order.id}.pdf`} />
+            <DocRow label="ODS Cliente" quoteId={q.id} type="ods-cliente" filename={`ODS-CLIENTE-${order.lead_id || order.id}.pdf`} />
+            <DocRow label="ODS Proveedor" quoteId={q.id} type="ods-proveedor" filename={`ODS-PROVEEDOR-${order.lead_id || order.id}.pdf`} />
           </div>
         </div>
       )}
@@ -350,7 +350,7 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
       {/* Quote notes */}
       {q?.notas && (
         <div style={{ marginTop: 20, background: "#f9fafb", borderRadius: 12, padding: "12px 16px" }}>
-          <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 500, margin: "0 0 4px" }}>Notes</p>
+          <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 500, margin: "0 0 4px" }}>Notas</p>
           <p style={{ fontSize: 14, color: "#374151", margin: 0, lineHeight: 1.5 }}>{q.notas}</p>
         </div>
       )}
@@ -376,12 +376,12 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
             onMouseEnter={(e) => { e.currentTarget.style.background = "#1e293b"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "#0f172a"; }}
           >
-            Mark as Concluded
+            Concluir Servicio
           </button>
         ) : (
           <div style={{ background: "#fefce8", border: "1.5px solid #fbbf24", borderRadius: 12, padding: "1rem" }}>
             <p style={{ margin: "0 0 0.875rem", fontSize: 14, color: "#78350f", fontWeight: 600, textAlign: "center" }}>
-              Confirm: mark this service as concluded?
+              ¿Confirmar que este servicio ha concluido?
             </p>
             <div style={{ display: "flex", gap: 10 }}>
               <button
@@ -390,7 +390,7 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
                 disabled={concluding}
                 style={{ flex: 1, padding: "0.75rem", fontSize: 14, fontWeight: 600, fontFamily: "inherit", color: "#374151", background: "#fff", border: "1.5px solid #e2e8f0", borderRadius: 10, cursor: "pointer" }}
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -398,7 +398,7 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
                 disabled={concluding}
                 style={{ flex: 1, padding: "0.75rem", fontSize: 14, fontWeight: 700, fontFamily: "inherit", color: "#fff", background: concluding ? "#86efac" : "#16a34a", border: "none", borderRadius: 10, cursor: concluding ? "not-allowed" : "pointer", transition: "background 0.2s" }}
               >
-                {concluding ? "Saving…" : "Confirm"}
+                {concluding ? "Guardando…" : "Confirmar"}
               </button>
             </div>
           </div>
@@ -454,19 +454,19 @@ export default function Orders() {
     <div style={{ maxWidth: 560, margin: "0 auto", padding: "1.25rem 1rem 2.5rem" }}>
 
       <h1 style={{ textAlign: "center", fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.12em", color: "#64748b", textTransform: "uppercase", margin: "0 0 1rem" }}>
-        ORDERS
+        ÓRDENES
       </h1>
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
-          <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>Loading…
+          <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>Cargando…
         </div>
       ) : error ? (
         <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "1rem", textAlign: "center" }}>{error}</div>
       ) : orders.length === 0 ? (
         <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
           <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📦</div>
-          No assigned orders yet.
+          No hay órdenes asignadas aún.
         </div>
       ) : (
         <>
