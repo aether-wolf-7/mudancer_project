@@ -204,7 +204,7 @@ class LeadController extends Controller
         if (! $lead->publicada || ! $lead->public_token) {
             return null;
         }
-        $base = rtrim(env('FRONTEND_URL', 'https://mudancer.com'), '/');
+        $base = rtrim(env('FRONTEND_URL', 'https://app.mudancer.com'), '/');
         return "{$base}/leads/{$lead->lead_id}/{$lead->public_token}";
     }
 
