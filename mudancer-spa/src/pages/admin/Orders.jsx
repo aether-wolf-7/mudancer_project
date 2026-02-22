@@ -200,6 +200,11 @@ function LeadCard({ order, selected, onClick }) {
       <p style={{ margin: "0 0 6px", fontSize: "0.8375rem", fontWeight: 500, color: "#dc2626" }}>
         {[order.destination_state, order.destination_city].filter(Boolean).join(", ") || "—"}
       </p>
+      {(order.client_phone || order.telefono_cliente) && (
+        <p style={{ margin: "0 0 6px", fontSize: "0.8rem", color: "#374151", fontWeight: 600 }}>
+          📞 {order.client_phone || order.telefono_cliente}
+        </p>
+      )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
         <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{fmtDate(order.ideal_date)}</span>
         {order.assigned_quote && (

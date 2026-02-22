@@ -60,10 +60,14 @@ function LeadCard({ lead, onClick, isNew }) {
         {[lead.destination_state, lead.destination_city].filter(Boolean).join(", ") || "—"}
       </p>
 
-      {/* Bottom row: date */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: "0.8rem", color: "#64748b" }}>{idealDate}</span>
-        <span style={{ fontSize: "0.8rem", color: "#94a3b8" }}>Tap to open ›</span>
+      {/* Bottom row: phone + date */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        {lead.client_phone && (
+          <span style={{ fontSize: "0.8rem", color: "#374151", fontWeight: 600 }}>
+            📞 {lead.client_phone}
+          </span>
+        )}
+        <span style={{ fontSize: "0.8rem", color: "#64748b", marginLeft: "auto" }}>{idealDate}</span>
       </div>
     </div>
   );

@@ -340,6 +340,11 @@ function LeadSummaryCard({ lead, selected, onClick, isNew }) {
       <p style={{ margin: "0 0 6px", fontSize: "0.8375rem", fontWeight: 500, color: "#dc2626" }}>
         {[lead.destination_state, lead.destination_city].filter(Boolean).join(", ") || "—"}
       </p>
+      {lead.client_phone && (
+        <p style={{ margin: "0 0 6px", fontSize: "0.8rem", color: "#374151", fontWeight: 600 }}>
+          📞 {lead.client_phone}
+        </p>
+      )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
           <span style={{ fontSize: "0.75rem", color: "#64748b" }}>{fmtDate(lead.ideal_date)}</span>
