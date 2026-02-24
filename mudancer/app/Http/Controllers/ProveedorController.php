@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lead;
 use App\Models\Provider;
+use App\Models\ProviderLeadView;
 use App\Models\Quote;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,24 +34,91 @@ class ProveedorController extends Controller
     }
 
     /**
-     * GET /api/proveedor/leads — available leads: publicada=true, adjudicada=false, newest first.
+     * GET /api/proveedor/leads — ALL published leads except those assigned to THIS provider.
+     * Each lead includes a supplier_state (nueva/disponible/cotizada/adjudicada) and can_quote flag.
+     *
+     * State logic (calculated dynamically):
+     *   adjudicada + this provider won  → excluded (lives in Orders)
+     *   adjudicada + another won        → "adjudicada" (locked)
+     *   this provider has a quote       → "cotizada"  (locked)
+     *   this provider viewed but no quote → "disponible"
+     *   never viewed                    → "nueva"
      */
     public function availableLeads(): JsonResponse
     {
+        $provider = $this->getProviderForUser();
+        if (! $provider) {
+            return response()->json(['message' => 'Provider profile not found.'], 403);
+        }
+
+        // Lead IDs where THIS provider's quote was selected (these go to Orders, not Leads)
+        $myWonLeadIds = Quote::where('provider_id', $provider->id)
+            ->where('seleccionada', true)
+            ->pluck('lead_id')
+            ->toArray();
+
+        // All published leads not won by this provider
         $leads = Lead::query()
             ->where('publicada', true)
-            ->where('adjudicada', false)
+            ->whereNotIn('id', $myWonLeadIds)
             ->orderBy('created_at', 'desc')
             ->select([
                 'id', 'lead_id', 'nombre_cliente',
                 'estado_origen', 'localidad_origen',
                 'estado_destino', 'localidad_destino',
-                'fecha_recoleccion',
+                'fecha_recoleccion', 'adjudicada',
             ])
-            ->withCount('quotes')
             ->get();
 
-        return response()->json(['data' => $leads]);
+        // Batch-load this provider's quoted lead IDs and viewed lead IDs
+        $quotedLeadIds = Quote::where('provider_id', $provider->id)
+            ->pluck('lead_id')
+            ->flip()
+            ->toArray();
+
+        $viewedLeadIds = ProviderLeadView::where('provider_id', $provider->id)
+            ->pluck('lead_id')
+            ->flip()
+            ->toArray();
+
+        $result = $leads->map(function (Lead $lead) use ($quotedLeadIds, $viewedLeadIds) {
+            $state = $this->computeSupplierState($lead, $quotedLeadIds, $viewedLeadIds);
+            return [
+                'id'               => $lead->id,
+                'lead_id'          => $lead->lead_id,
+                'nombre_cliente'   => $lead->nombre_cliente,
+                'estado_origen'    => $lead->estado_origen,
+                'localidad_origen' => $lead->localidad_origen,
+                'estado_destino'   => $lead->estado_destino,
+                'localidad_destino'=> $lead->localidad_destino,
+                'fecha_recoleccion'=> $lead->fecha_recoleccion,
+                'supplier_state'   => $state,
+                'can_quote'        => in_array($state, ['nueva', 'disponible'], true),
+            ];
+        })->values();
+
+        return response()->json(['data' => $result]);
+    }
+
+    /**
+     * Compute the per-supplier state for a given lead.
+     *
+     * @param array $quotedLeadIds  flip()'d collection → array keyed by lead_id for fast lookup
+     * @param array $viewedLeadIds  same
+     */
+    private function computeSupplierState(Lead $lead, array $quotedLeadIds, array $viewedLeadIds): string
+    {
+        if (isset($quotedLeadIds[$lead->id])) {
+            // If the lead was also adjudicada (and someone else won), show adjudicada
+            return $lead->adjudicada ? 'adjudicada' : 'cotizada';
+        }
+        if ($lead->adjudicada) {
+            return 'adjudicada';
+        }
+        if (isset($viewedLeadIds[$lead->id])) {
+            return 'disponible';
+        }
+        return 'nueva';
     }
 
     /**
@@ -104,7 +172,9 @@ class ProveedorController extends Controller
     }
 
     /**
-     * GET /api/proveedor/leads/{lead} — full lead + current provider's quotes count for this lead.
+     * GET /api/proveedor/leads/{lead} — full lead detail.
+     * Also records a view (nueva → disponible transition).
+     * Returns supplier_state and can_quote alongside lead data.
      */
     public function showLead(Lead $lead): JsonResponse
     {
@@ -113,11 +183,30 @@ class ProveedorController extends Controller
             return response()->json(['message' => 'Provider profile not found.'], 403);
         }
 
+        // Record view — idempotent, triggers nueva→disponible on next dashboard load
+        ProviderLeadView::updateOrCreate(
+            ['provider_id' => $provider->id, 'lead_id' => $lead->id]
+        );
+
         $lead->loadCount(['quotes as my_quotes_count' => function ($q) use ($provider) {
             $q->where('provider_id', $provider->id);
         }]);
 
-        return response()->json(['data' => $lead]);
+        // Compute supplier state (view was just recorded, so at least "disponible")
+        $hasQuote = $lead->my_quotes_count > 0;
+        $state = match (true) {
+            $hasQuote && $lead->adjudicada => 'adjudicada',
+            $hasQuote                      => 'cotizada',
+            $lead->adjudicada              => 'adjudicada',
+            default                        => 'disponible',
+        };
+
+        return response()->json([
+            'data' => array_merge($lead->toArray(), [
+                'supplier_state' => $state,
+                'can_quote'      => in_array($state, ['nueva', 'disponible'], true),
+            ]),
+        ]);
     }
 
     /**
@@ -128,11 +217,12 @@ class ProveedorController extends Controller
     public function submitQuote(Request $request, Lead $lead): JsonResponse
     {
         $validated = $request->validate([
-            'precio_total' => 'required|numeric|min:0',
-            'notas'        => 'nullable|string',
-            'apartado'     => 'nullable|numeric|min:0',
-            'anticipo'     => 'nullable|numeric|min:0',
-            'pago_final'   => 'nullable|numeric|min:0',
+            'precio_total'     => 'required|numeric|min:0',
+            'notas'            => 'nullable|string',
+            'nombre_propuesta' => 'nullable|string|max:120',
+            'apartado'         => 'nullable|numeric|min:0',
+            'anticipo'         => 'nullable|numeric|min:0',
+            'pago_final'       => 'nullable|numeric|min:0',
         ]);
 
         $provider = $this->getProviderForUser();
@@ -158,14 +248,15 @@ class ProveedorController extends Controller
         $tarifaSeguro = ($lead->seguro > 0) ? round((float) $lead->seguro * 0.015, 2) : null;
 
         $quote = Quote::create([
-            'lead_id'       => $lead->id,
-            'provider_id'   => $provider->id,
-            'precio_total'  => $precio,
-            'apartado'      => $apartado,
-            'anticipo'      => $anticipo,
-            'pago_final'    => $pagoFinal,
-            'tarifa_seguro' => $tarifaSeguro,
-            'notas'         => $validated['notas'] ?? null,
+            'lead_id'          => $lead->id,
+            'provider_id'      => $provider->id,
+            'precio_total'     => $precio,
+            'apartado'         => $apartado,
+            'anticipo'         => $anticipo,
+            'pago_final'       => $pagoFinal,
+            'tarifa_seguro'    => $tarifaSeguro,
+            'notas'            => $validated['notas'] ?? null,
+            'nombre_propuesta' => $validated['nombre_propuesta'] ?? null,
         ]);
 
         return response()->json(['data' => $quote], 201);

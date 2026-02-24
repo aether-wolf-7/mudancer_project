@@ -1,16 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getLeads, getAdjudicatedLeads } from "../../api/proveedorApi";
+import { getLeads } from "../../api/proveedorApi";
 
 function formatDate(str) {
-  if (!str) return "—";
+  if (!str) return null;
   const d = new Date(str.includes("T") ? str : str + "T00:00:00");
-  return isNaN(d.getTime()) ? str : d.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function fmtMoney(val) {
-  if (!val && val !== 0) return "—";
-  return "$" + Number(val).toLocaleString("es-MX", { minimumFractionDigits: 2 });
+  return isNaN(d.getTime()) ? str : d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 function originDestino(lead) {
@@ -19,218 +14,282 @@ function originDestino(lead) {
   return { o, d };
 }
 
-// ── Lead row for available leads table ────────────────────────────────────────
-function AvailableRow({ lead, onClick }) {
-  const { o, d } = originDestino(lead);
-  return (
-    <tr
-      onClick={onClick}
-      className="border-b border-gray-100 hover:bg-green-50 cursor-pointer transition-colors"
-    >
-      <td className="px-4 py-3 font-medium text-primary whitespace-nowrap">{lead.lead_id}</td>
-      <td className="px-4 py-3 text-gray-800">{lead.nombre_cliente}</td>
-      <td className="px-4 py-3 text-gray-600 text-sm">
-        <span className="text-green-700 font-medium">{o}</span>
-        <span className="mx-1 text-gray-400">→</span>
-        <span className="text-red-700 font-medium">{d}</span>
-      </td>
-      <td className="px-4 py-3 text-gray-500 text-sm whitespace-nowrap">{formatDate(lead.fecha_recoleccion)}</td>
-      <td className="px-4 py-3">
-        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-          Disponible
-        </span>
-      </td>
-    </tr>
-  );
-}
+/**
+ * Visual config per supplier_state.
+ *
+ * nueva      → never viewed           → yellow card, can quote
+ * disponible → viewed, not quoted     → white card, can quote
+ * cotizada   → this supplier quoted   → grey dimmed, locked
+ * adjudicada → assigned to another    → grey dimmed, locked
+ */
+const STATE_META = {
+  nueva: {
+    label:   "NUEVA",
+    badge:   { background: "#fef9c3", color: "#854d0e", border: "1px solid #fde047" },
+    card:    { background: "#fefce8", borderColor: "#fde047" },
+    dot:     "#ca8a04",
+    locked:  false,
+  },
+  disponible: {
+    label:   "DISPONIBLE",
+    badge:   { background: "#dcfce7", color: "#166534", border: "1px solid #86efac" },
+    card:    { background: "#fff", borderColor: "#e5e7eb" },
+    dot:     "#16a34a",
+    locked:  false,
+  },
+  cotizada: {
+    label:   "COTIZADA",
+    badge:   { background: "#f1f5f9", color: "#94a3b8", border: "1px solid #cbd5e1" },
+    card:    { background: "#f8fafc", borderColor: "#e2e8f0" },
+    dot:     "#94a3b8",
+    locked:  true,
+  },
+  adjudicada: {
+    label:   "ADJUDICADA",
+    badge:   { background: "#f1f5f9", color: "#94a3b8", border: "1px solid #cbd5e1" },
+    card:    { background: "#f8fafc", borderColor: "#e2e8f0" },
+    dot:     "#94a3b8",
+    locked:  true,
+  },
+};
 
-// ── Lead row for adjudicated leads table ──────────────────────────────────────
-function AdjudicatedRow({ lead, onClick }) {
+// ── Lead Card ─────────────────────────────────────────────────────────────────
+function LeadCard({ lead, onClick }) {
   const { o, d } = originDestino(lead);
+  const meta  = STATE_META[lead.supplier_state] ?? STATE_META.disponible;
+  const date  = formatDate(lead.fecha_recoleccion);
+
   return (
-    <tr
+    <div
       onClick={onClick}
-      className="border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors"
+      style={{
+        background:   meta.card.background,
+        border:       `1.5px solid ${meta.card.borderColor}`,
+        borderRadius: 14,
+        padding:      "0.875rem 1rem",
+        cursor:       "pointer",
+        opacity:      meta.locked ? 0.72 : 1,
+        transition:   "box-shadow 0.18s, transform 0.15s, opacity 0.15s",
+        position:     "relative",
+      }}
+      onMouseEnter={(e) => {
+        if (!meta.locked) {
+          e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.1)";
+          e.currentTarget.style.transform = "translateY(-1px)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = "none";
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
     >
-      <td className="px-4 py-3 font-medium text-primary whitespace-nowrap">{lead.lead_id}</td>
-      <td className="px-4 py-3 text-gray-800">{lead.nombre_cliente}</td>
-      <td className="px-4 py-3 text-gray-600 text-sm">
-        <span className="text-green-700 font-medium">{o}</span>
-        <span className="mx-1 text-gray-400">→</span>
-        <span className="text-red-700 font-medium">{d}</span>
-      </td>
-      <td className="px-4 py-3 text-gray-500 text-sm whitespace-nowrap">{formatDate(lead.fecha_recoleccion)}</td>
-      <td className="px-4 py-3 text-sm font-bold text-green-700 whitespace-nowrap">{fmtMoney(lead.precio_total)}</td>
-      <td className="px-4 py-3">
-        {lead.concluida ? (
-          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-200 text-gray-600">
-            Concluida
-          </span>
-        ) : (
-          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
-            Adjudicada ✓
+      {/* Top row: state badge + date */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem", gap: "0.5rem" }}>
+        <span style={{
+          display: "inline-flex", alignItems: "center", gap: "0.3rem",
+          padding: "2px 10px", borderRadius: 20, fontSize: "0.7rem", fontWeight: 700,
+          letterSpacing: "0.05em", lineHeight: 1.6,
+          ...meta.badge,
+        }}>
+          {/* Colored dot */}
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta.dot, flexShrink: 0 }} />
+          {meta.label}
+          {meta.locked && <span style={{ marginLeft: 2 }}>🔒</span>}
+        </span>
+
+        {date && (
+          <span style={{ fontSize: "0.75rem", color: "#94a3b8", whiteSpace: "nowrap", flexShrink: 0 }}>
+            📅 {date}
           </span>
         )}
-      </td>
-    </tr>
+      </div>
+
+      {/* Client name */}
+      <p style={{
+        margin: "0 0 0.5rem",
+        fontWeight: 700,
+        fontSize: "0.9375rem",
+        color: meta.locked ? "#94a3b8" : "#1e293b",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}>
+        {lead.nombre_cliente || "—"}
+      </p>
+
+      {/* Origin → Destination */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: "0.375rem", fontSize: "0.8125rem", flexWrap: "wrap" }}>
+        <span style={{
+          background: "#f0fdf4", color: "#15803d",
+          border: "1px solid #bbf7d0",
+          borderRadius: 6, padding: "2px 8px",
+          fontWeight: 500, whiteSpace: "nowrap",
+          maxWidth: "calc(50% - 1rem)", overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          📍 {o}
+        </span>
+        <span style={{ color: "#9ca3af", alignSelf: "center", fontSize: "0.75rem" }}>→</span>
+        <span style={{
+          background: "#fef2f2", color: "#dc2626",
+          border: "1px solid #fecaca",
+          borderRadius: 6, padding: "2px 8px",
+          fontWeight: 500, whiteSpace: "nowrap",
+          maxWidth: "calc(50% - 1rem)", overflow: "hidden", textOverflow: "ellipsis",
+        }}>
+          🏁 {d}
+        </span>
+      </div>
+    </div>
   );
 }
 
-// ── Section wrapper ────────────────────────────────────────────────────────────
-function SectionHeader({ title, count, color = "gray" }) {
-  const colors = {
-    green: "bg-green-600",
-    blue:  "bg-blue-600",
-    gray:  "bg-gray-600",
-  };
+// ── Summary chip ──────────────────────────────────────────────────────────────
+function StateChip({ stateKey, count }) {
+  const meta = STATE_META[stateKey];
+  if (!meta || !count) return null;
   return (
-    <div className="flex items-center gap-3 mb-3">
-      <h2 className="text-base font-bold text-gray-800">{title}</h2>
-      <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold ${colors[color]}`}>
-        {count}
-      </span>
-    </div>
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: "0.3rem",
+      padding: "3px 10px", borderRadius: 20,
+      fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.04em",
+      ...meta.badge,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta.dot }} />
+      {meta.label} {count}
+    </span>
   );
 }
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [available, setAvailable]       = useState([]);
-  const [adjudicated, setAdjudicated]   = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [error, setError]               = useState(null);
-  const [search, setSearch]             = useState("");
+  const [leads, setLeads]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState(null);
+  const [search, setSearch]   = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    Promise.all([getLeads(), getAdjudicatedLeads()])
-      .then(([avail, adjud]) => {
-        if (!cancelled) {
-          setAvailable(avail);
-          setAdjudicated(adjud);
-        }
-      })
-      .catch((err) => { if (!cancelled) setError(err.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+    getLeads()
+      .then((list) => { if (!cancelled) setLeads(list); })
+      .catch((err)  => { if (!cancelled) setError(err.message); })
+      .finally(()   => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
 
-  function filterLeads(list) {
-    const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((l) =>
-      [l.lead_id, l.nombre_cliente, l.estado_origen, l.estado_destino,
-       l.localidad_origen, l.localidad_destino]
-        .some((v) => v && v.toLowerCase().includes(q))
-    );
-  }
+  const q        = search.trim().toLowerCase();
+  const filtered = q
+    ? leads.filter((l) =>
+        [l.nombre_cliente, l.estado_origen, l.estado_destino,
+         l.localidad_origen, l.localidad_destino]
+          .some((v) => v && v.toLowerCase().includes(q))
+      )
+    : leads;
 
-  const filteredAvail = filterLeads(available);
-  const filteredAdjud = filterLeads(adjudicated);
+  const counts = leads.reduce((acc, l) => {
+    acc[l.supplier_state] = (acc[l.supplier_state] ?? 0) + 1;
+    return acc;
+  }, {});
 
   if (loading) return (
-    <div className="p-4 flex justify-center items-center min-h-[40vh]">
-      <p className="text-gray-500">Cargando leads…</p>
+    <div style={{ padding: "2rem 1rem", display: "flex", justifyContent: "center", alignItems: "center", minHeight: "40vh" }}>
+      <p style={{ color: "#94a3b8", fontSize: "0.9rem" }}>Cargando leads…</p>
     </div>
   );
 
   if (error) return (
-    <div className="p-4">
-      <div className="text-red-600 bg-red-50 p-4 rounded-lg">{error}</div>
+    <div style={{ padding: "1rem" }}>
+      <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "1rem", fontSize: "0.875rem" }}>{error}</div>
     </div>
   );
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
-      <h1 className="text-xl font-bold text-gray-900 mb-4">LEADS</h1>
+    <>
+      {/* Responsive grid CSS */}
+      <style>{`
+        .leads-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
+        }
+        @media (min-width: 640px) {
+          .leads-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1024px) {
+          .leads-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .leads-search:focus {
+          outline: none;
+          border-color: #22c55e;
+          box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+        }
+      `}</style>
 
-      {/* Search */}
-      <div className="mb-6">
-        <input
-          type="search"
-          placeholder="Buscar por ID, cliente, origen, destino…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
-        />
-      </div>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "1.25rem 1rem 2.5rem" }}>
 
-      {/* ── Available leads ── */}
-      <div className="mb-8">
-        <SectionHeader title="Disponibles" count={filteredAvail.length} color="green" />
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="bg-green-50 border-b border-gray-200">
-                  <th className="px-4 py-3 font-semibold text-gray-700">ID</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Cliente</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Origen → Destino</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Fecha</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAvail.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
-                      {search.trim() ? "Sin resultados." : "No hay leads disponibles en este momento."}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAvail.map((lead) => (
-                    <AvailableRow
-                      key={lead.id}
-                      lead={lead}
-                      onClick={() => navigate("/proveedor/leads/" + lead.id)}
-                    />
-                  ))
-                )}
-              </tbody>
-            </table>
+        {/* Header */}
+        <h1 style={{ fontWeight: 800, fontSize: "1.25rem", color: "#1e293b", margin: "0 0 1rem", letterSpacing: "-0.01em" }}>
+          Leads
+        </h1>
+
+        {/* State summary chips */}
+        {leads.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "1rem" }}>
+            {["nueva", "disponible", "cotizada", "adjudicada"].map((k) => (
+              <StateChip key={k} stateKey={k} count={counts[k]} />
+            ))}
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* ── Adjudicated leads ── */}
-      <div>
-        <SectionHeader title="Adjudicadas" count={filteredAdjud.length} color="blue" />
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="bg-blue-50 border-b border-gray-200">
-                  <th className="px-4 py-3 font-semibold text-gray-700">ID</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Cliente</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Origen → Destino</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Fecha</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Tu precio</th>
-                  <th className="px-4 py-3 font-semibold text-gray-700">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAdjud.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">
-                      {search.trim() ? "Sin resultados." : "Aún no tienes leads adjudicadas."}
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAdjud.map((lead) => (
-                    <AdjudicatedRow
-                      key={lead.id}
-                      lead={lead}
-                      onClick={() => navigate("/proveedor/leads/" + lead.id)}
-                    />
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+        {/* Search */}
+        <div style={{ marginBottom: "1.25rem" }}>
+          <input
+            className="leads-search"
+            type="search"
+            placeholder="Buscar por cliente, origen, destino…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: "100%", boxSizing: "border-box",
+              padding: "0.625rem 1rem", fontSize: "0.9rem",
+              fontFamily: "inherit", color: "#1e293b",
+              border: "1.5px solid #e2e8f0", borderRadius: 10,
+              background: "#fff", transition: "border-color 0.2s",
+            }}
+          />
         </div>
+
+        {/* Cards grid */}
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "3rem 1rem", color: "#94a3b8" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📦</div>
+            <p style={{ margin: 0, fontSize: "0.9rem" }}>
+              {q ? "Sin resultados para esa búsqueda." : "No hay leads disponibles en este momento."}
+            </p>
+          </div>
+        ) : (
+          <div className="leads-grid">
+            {filtered.map((lead) => (
+              <LeadCard
+                key={lead.id}
+                lead={lead}
+                onClick={() => navigate("/proveedor/leads/" + lead.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Legend */}
+        {leads.length > 0 && (
+          <div style={{ marginTop: "1.5rem", display: "flex", flexWrap: "wrap", gap: "0.75rem 1.25rem", fontSize: "0.75rem", color: "#94a3b8" }}>
+            <span><span style={{ color: "#ca8a04", fontWeight: 600 }}>NUEVA</span> — nunca visto</span>
+            <span><span style={{ color: "#16a34a", fontWeight: 600 }}>DISPONIBLE</span> — visto, sin cotizar</span>
+            <span><span style={{ color: "#94a3b8", fontWeight: 600 }}>COTIZADA 🔒</span> — ya cotizaste</span>
+            <span><span style={{ color: "#94a3b8", fontWeight: 600 }}>ADJUDICADA 🔒</span> — asignada a otro</span>
+          </div>
+        )}
       </div>
-    </div>
+    </>
   );
 }

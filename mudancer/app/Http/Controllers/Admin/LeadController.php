@@ -7,6 +7,8 @@ use App\Http\Requests\UpdateLeadRequest;
 use App\Models\Lead;
 use App\Models\Quote;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class LeadController extends Controller
@@ -197,6 +199,57 @@ class LeadController extends Controller
         ]);
     }
 
+    /**
+     * POST /api/admin/leads/{id}/imagen — upload one or more files, appending to the lead's gallery.
+     * Accepts multipart/form-data with field "imagenes[]" (image or video files, max 20 MB each).
+     */
+    public function uploadImagen(Request $request, int $id): JsonResponse
+    {
+        $request->validate([
+            'imagenes'   => 'required|array|min:1|max:20',
+            'imagenes.*' => 'file|mimes:jpeg,jpg,png,gif,webp,mp4,mov,avi,quicktime|max:20480',
+        ]);
+
+        $lead     = Lead::findOrFail($id);
+        $existing = $lead->imagenes ?? [];
+
+        foreach ($request->file('imagenes') as $file) {
+            $filename   = 'lead-images/' . Str::random(24) . '.' . $file->getClientOriginalExtension();
+            $file->storeAs('', $filename, 'public');
+            $existing[] = $filename;
+        }
+
+        $lead->imagenes = $existing;
+        $lead->save();
+
+        return response()->json($this->imagenesPayload($lead));
+    }
+
+    /**
+     * DELETE /api/admin/leads/{id}/imagen — remove one file from the gallery.
+     * Body: { "path": "lead-images/xyz.jpg" }
+     */
+    public function removeImagen(Request $request, int $id): JsonResponse
+    {
+        $request->validate(['path' => 'required|string']);
+
+        $lead     = Lead::findOrFail($id);
+        $imagenes = $lead->imagenes ?? [];
+        $path     = $request->input('path');
+
+        if (in_array($path, $imagenes, true)) {
+            if (Storage::disk('public')->exists($path)) {
+                Storage::disk('public')->delete($path);
+            }
+            $imagenes = array_values(array_filter($imagenes, fn ($p) => $p !== $path));
+        }
+
+        $lead->imagenes = $imagenes;
+        $lead->save();
+
+        return response()->json($this->imagenesPayload($lead));
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private function buildPublicUrl(Lead $lead): ?string
@@ -268,16 +321,37 @@ class LeadController extends Controller
 
     private function leadWithComputed(Lead $lead): array
     {
-        $attrs               = $lead->toArray();
-        $attrs['public_id']  = $lead->lead_id;
-        $attrs['client_name'] = $lead->nombre_cliente;
-        $attrs['ideal_date'] = $lead->fecha_recoleccion;
-        $attrs['status']     = $this->deriveStatus($lead);
-        $attrs['is_new']     = ! $lead->vista;
+        $attrs                     = $lead->toArray();
+        $attrs['public_id']        = $lead->lead_id;
+        $attrs['client_name']      = $lead->nombre_cliente;
+        $attrs['ideal_date']       = $lead->fecha_recoleccion;
+        $attrs['status']           = $this->deriveStatus($lead);
+        $attrs['is_new']           = ! $lead->vista;
         $attrs['is_new_for_admin'] = ! $lead->vista;
-        $attrs['public_url'] = $this->buildPublicUrl($lead);
+        $attrs['public_url']       = $this->buildPublicUrl($lead);
+
+        // Multi-image gallery
+        $payload                   = $this->imagenesPayload($lead);
+        $attrs['imagenes']         = $payload['imagenes'];
+        $attrs['imagenes_urls']    = $payload['imagenes_urls'];
 
         return $attrs;
+    }
+
+    /** Build the { imagenes, imagenes_urls } payload for a lead. */
+    private function imagenesPayload(Lead $lead): array
+    {
+        $paths = $lead->imagenes ?? [];
+
+        // Backward-compat: if the old single imagen_path exists but imagenes is empty, surface it
+        if (empty($paths) && $lead->imagen_path) {
+            $paths = [$lead->imagen_path];
+        }
+
+        return [
+            'imagenes'      => $paths,
+            'imagenes_urls' => array_map(fn ($p) => asset('storage/' . $p), $paths),
+        ];
     }
 
     private function deriveStatus(Lead $lead): string

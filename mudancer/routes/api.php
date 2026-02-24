@@ -30,6 +30,8 @@ Route::prefix('admin')->group(function () {
         Route::get('leads', [AdminLeadController::class, 'index']);
         Route::get('leads/{id}', [AdminLeadController::class, 'show']);
         Route::put('leads/{id}', [AdminLeadController::class, 'update']);
+        Route::post('leads/{id}/imagen', [AdminLeadController::class, 'uploadImagen']);
+        Route::delete('leads/{id}/imagen', [AdminLeadController::class, 'removeImagen']);
         Route::post('leads/{id}/publish', [AdminLeadController::class, 'publish']);
         Route::post('leads/{id}/adjudicar', [AdminLeadController::class, 'adjudicar']);
         Route::post('leads/{id}/concluir', [AdminLeadController::class, 'concluir']);

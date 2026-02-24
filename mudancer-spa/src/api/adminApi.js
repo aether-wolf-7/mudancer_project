@@ -3,7 +3,14 @@
  */
 
 import api, { getAdminToken } from "./client";
-import { downloadAuthPdf, apiBase } from "./pdfUtils.js";
+import { downloadAuthPdf, apiBase, storageBase } from "./pdfUtils.js";
+
+/** Re-compute imagenes_urls from the raw path array so we never rely on APP_URL. */
+function withImagenesUrls(lead) {
+  if (!lead) return lead;
+  const paths = Array.isArray(lead.imagenes) ? lead.imagenes : [];
+  return { ...lead, imagenes_urls: paths.map((p) => `${storageBase()}/${p}`) };
+}
 
 export async function login(identifier, password) {
   const { data } = await api.post("/admin/login", { identifier, password });
@@ -18,12 +25,31 @@ export async function getLeads() {
 
 export async function getLead(id) {
   const { data } = await api.get(`/admin/leads/${id}`);
-  return data?.data ?? null;
+  return withImagenesUrls(data?.data ?? null);
 }
 
 export async function updateLead(id, body) {
   const { data } = await api.put(`/admin/leads/${id}`, body);
   return data?.data ?? null;
+}
+
+/** Upload one or more files to the lead's gallery. Returns { imagenes, imagenes_urls }. */
+export async function uploadLeadImagen(id, files) {
+  const form = new FormData();
+  const list = Array.isArray(files) ? files : [files];
+  list.forEach((f) => form.append("imagenes[]", f));
+  const { data } = await api.post(`/admin/leads/${id}/imagen`, form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  const paths = Array.isArray(data?.imagenes) ? data.imagenes : [];
+  return { imagenes: paths, imagenes_urls: paths.map((p) => `${storageBase()}/${p}`) };
+}
+
+/** Remove a single file from the lead's gallery by its stored path. Returns { imagenes, imagenes_urls }. */
+export async function removeLeadImagen(id, path) {
+  const { data } = await api.delete(`/admin/leads/${id}/imagen`, { data: { path } });
+  const paths = Array.isArray(data?.imagenes) ? data.imagenes : [];
+  return { imagenes: paths, imagenes_urls: paths.map((p) => `${storageBase()}/${p}`) };
 }
 
 export async function publishLead(id) {

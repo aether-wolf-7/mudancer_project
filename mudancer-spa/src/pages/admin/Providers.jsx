@@ -94,7 +94,9 @@ function InfoChip({ icon, label, value }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: "0.35rem", fontSize: "0.8rem", color: "#64748b" }}>
       <span style={{ flexShrink: 0, marginTop: 1 }}>{icon}</span>
-      <span><span style={{ fontWeight: 600, color: "#475569" }}>{label}:</span> {value}</span>
+      <span style={{ wordBreak: "break-word", overflowWrap: "anywhere", minWidth: 0 }}>
+        <span style={{ fontWeight: 600, color: "#475569" }}>{label}:</span> {value}
+      </span>
     </div>
   );
 }
@@ -114,19 +116,21 @@ function ProviderCard({ provider, onClick }) {
         padding: "1rem 1.125rem",
         display: "flex", gap: "0.875rem", alignItems: "flex-start",
         cursor: "pointer", transition: "box-shadow 0.2s, transform 0.15s",
+        overflow: "hidden",
       }}
       onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.13)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.08)"; e.currentTarget.style.transform = "translateY(0)"; }}
     >
       <Avatar nombre={nombre} logo={logo} size={50} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: "0.25rem" }}>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: "0.9375rem", color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>
+        {/* Name row — wraps on narrow screens so badge never crushes the name */}
+        <div className="prov-card-name-row" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 6, marginBottom: "0.25rem" }}>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: "0.9375rem", color: "#1e293b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
             {nombre || "—"}
           </p>
           {completed_count > 0 && (
-            <span style={{ flexShrink: 0, fontSize: "0.72rem", fontWeight: 600, background: "#d1fae5", color: "#065f46", borderRadius: 20, padding: "2px 8px" }}>
-              ✓ {completed_count} completed
+            <span style={{ flexShrink: 0, fontSize: "0.72rem", fontWeight: 600, background: "#d1fae5", color: "#065f46", borderRadius: 20, padding: "2px 8px", whiteSpace: "nowrap" }}>
+              ✓ {completed_count}
             </span>
           )}
         </div>
@@ -230,8 +234,9 @@ function ProviderModal({ provider, onClose, onSaved }) {
       style={{
         position: "fixed", inset: 0, zIndex: 1000,
         background: "rgba(15,23,42,0.55)", backdropFilter: "blur(3px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "1rem",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "env(safe-area-inset-top, 1rem) 1rem env(safe-area-inset-bottom, 1rem)",
+        overflowY: "auto",
         animation: "fadeIn 0.18s ease",
       }}
     >
@@ -241,17 +246,23 @@ function ProviderModal({ provider, onClose, onSaved }) {
         .modal-input:focus { border-color: #22c55e !important; box-shadow: 0 0 0 3px rgba(34,197,94,0.15); }
         .modal-scroll::-webkit-scrollbar { width: 5px; }
         .modal-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .prov-modal-box {
+          background: #fff;
+          border-radius: 20px;
+          width: 100%;
+          max-width: 440px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+          animation: slideUp 0.22s ease;
+          margin: auto 0;
+        }
+        @media (max-width: 480px) {
+          .prov-modal-box { border-radius: 16px; }
+        }
       `}</style>
 
       <div
-        className="modal-scroll"
-        style={{
-          background: "#fff", borderRadius: 20,
-          width: "100%", maxWidth: 440,
-          maxHeight: "90vh", overflowY: "auto",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-          animation: "slideUp 0.22s ease",
-        }}
+        className="modal-scroll prov-modal-box"
+        style={{ overflowY: "auto", maxHeight: "calc(100dvh - 2rem)" }}
       >
         {/* ── Header ── */}
         <div style={{ padding: "1.25rem 1.25rem 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -500,7 +511,7 @@ function AddProviderModal({ onClose, onCreated }) {
   const err = (key) => errors[key] && <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", color: "#dc2626" }}>⚠ {errors[key]}</p>;
 
   return (
-    <div onClick={handleBackdrop} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(3px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem", animation: "fadeIn 0.18s ease" }}>
+    <div onClick={handleBackdrop} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.55)", backdropFilter: "blur(3px)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "env(safe-area-inset-top, 1rem) 1rem env(safe-area-inset-bottom, 1rem)", overflowY: "auto", animation: "fadeIn 0.18s ease" }}>
       <style>{`
         @keyframes fadeIn  { from{opacity:0}           to{opacity:1} }
         @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
@@ -509,7 +520,7 @@ function AddProviderModal({ onClose, onCreated }) {
         .modal-scroll::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:10px}
       `}</style>
 
-      <div className="modal-scroll" style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 440, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", animation: "slideUp 0.22s ease" }}>
+      <div className="modal-scroll" style={{ background: "#fff", borderRadius: 20, width: "100%", maxWidth: 440, maxHeight: "calc(100dvh - 2rem)", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", animation: "slideUp 0.22s ease", margin: "auto 0" }}>
 
         {/* Header */}
         <div style={{ padding: "1.25rem 1.25rem 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -696,6 +707,38 @@ export default function Providers() {
   return (
     <div style={{ maxWidth: 520, margin: "0 auto", padding: "1.25rem 1rem 2rem" }}>
 
+      {/* ── Mobile-responsive CSS ── */}
+      <style>{`
+        /* Search controls: single row on tablets, two rows on phones */
+        .prov-controls {
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          flex-wrap: wrap;
+        }
+        .prov-toggle-group {
+          display: flex;
+          border-radius: 10px;
+          overflow: hidden;
+          border: 1.5px solid #e2e8f0;
+          flex-shrink: 0;
+        }
+        .prov-input-wrap {
+          flex: 1;
+          display: flex;
+          gap: 0.5rem;
+          align-items: center;
+          min-width: 0;
+        }
+        /* On narrow phones: filter toggle takes full width, input+btn below */
+        @media (max-width: 420px) {
+          .prov-controls { flex-direction: column; align-items: stretch; }
+          .prov-toggle-group { width: 100%; }
+          .prov-toggle-group button { flex: 1; justify-content: center; padding: 0.625rem 0.5rem !important; }
+          .prov-input-wrap { width: 100%; }
+        }
+      `}</style>
+
       {/* Title */}
       <h1 style={{ textAlign: "center", fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.12em", color: "#64748b", textTransform: "uppercase", margin: "0 0 1.125rem" }}>
         Suppliers
@@ -703,34 +746,38 @@ export default function Providers() {
 
       {/* Search */}
       <div style={{ marginBottom: "1rem" }}>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "stretch" }}>
-          <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1.5px solid #e2e8f0", flexShrink: 0 }}>
+        <div className="prov-controls">
+          {/* Filter toggle: Name | Phone */}
+          <div className="prov-toggle-group">
             {[{ value: "nombre", label: "Name" }, { value: "telefono", label: "Phone" }].map(({ value, label }) => (
               <button key={value} type="button" onClick={() => handleSearchByChange(value)}
-                style={{ padding: "0.5rem 0.75rem", fontSize: "0.8125rem", fontWeight: 600, border: "none", cursor: "pointer", background: searchBy === value ? "#22c55e" : "#fff", color: searchBy === value ? "#fff" : "#64748b", transition: "background 0.15s, color 0.15s", fontFamily: "inherit" }}>
+                style={{ padding: "0.5rem 0.875rem", fontSize: "0.8125rem", fontWeight: 600, border: "none", cursor: "pointer", background: searchBy === value ? "#22c55e" : "#fff", color: searchBy === value ? "#fff" : "#64748b", transition: "background 0.15s, color 0.15s", fontFamily: "inherit", minHeight: 44 }}>
                 {label}
               </button>
             ))}
           </div>
-          <input
-            type={searchBy === "telefono" ? "tel" : "text"}
-            value={searchInput}
-            onChange={(e) => handleSearchInput(e.target.value)}
-            placeholder={searchBy === "telefono" ? "Search by phone…" : "Search by company name…"}
-            style={{ flex: 1, padding: "0.5rem 0.875rem", fontSize: "0.9rem", fontFamily: "inherit", border: "1.5px solid #e2e8f0", borderRadius: 10, outline: "none", color: "#1e293b", background: "#fff", transition: "border-color 0.2s" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "#22c55e")}
-            onBlur={(e) => (e.currentTarget.style.borderColor = "#e2e8f0")}
-          />
 
-          {/* Add supplier button */}
-          <button
-            type="button"
-            onClick={() => setShowAdd(true)}
-            title="Add supplier"
-            style={{ width: 42, height: 42, borderRadius: 10, border: "none", background: "#22c55e", color: "#fff", fontSize: "1.375rem", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(34,197,94,0.35)", transition: "background 0.2s, transform 0.15s" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "#16a34a"; e.currentTarget.style.transform = "scale(1.07)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "#22c55e"; e.currentTarget.style.transform = "scale(1)"; }}
-          >+</button>
+          {/* Input + Add button */}
+          <div className="prov-input-wrap">
+            <input
+              type={searchBy === "telefono" ? "tel" : "text"}
+              value={searchInput}
+              onChange={(e) => handleSearchInput(e.target.value)}
+              placeholder={searchBy === "telefono" ? "Search by phone…" : "Search by name…"}
+              style={{ flex: 1, minWidth: 0, padding: "0.625rem 0.875rem", fontSize: "0.9rem", fontFamily: "inherit", border: "1.5px solid #e2e8f0", borderRadius: 10, outline: "none", color: "#1e293b", background: "#fff", transition: "border-color 0.2s", height: 44, boxSizing: "border-box" }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#22c55e")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "#e2e8f0")}
+            />
+            {/* Add supplier button */}
+            <button
+              type="button"
+              onClick={() => setShowAdd(true)}
+              title="Add supplier"
+              style={{ width: 44, height: 44, borderRadius: 10, border: "none", background: "#22c55e", color: "#fff", fontSize: "1.375rem", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(34,197,94,0.35)", transition: "background 0.2s, transform 0.15s" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#16a34a"; e.currentTarget.style.transform = "scale(1.07)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "#22c55e"; e.currentTarget.style.transform = "scale(1)"; }}
+            >+</button>
+          </div>
         </div>
         {!loading && (
           <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "#94a3b8" }}>

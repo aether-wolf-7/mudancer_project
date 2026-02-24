@@ -39,3 +39,11 @@ export function apiBase() {
   const env = (import.meta.env.VITE_API_URL ?? "").trim();
   return env ? `${env.replace(/\/$/, "")}/api` : "/api";
 }
+
+/**
+ * Builds the public storage URL base (strips the "/api" suffix from apiBase).
+ * e.g.  https://app.mudancer.com/api  →  https://app.mudancer.com/storage
+ */
+export function storageBase() {
+  return apiBase().replace(/\/api$/, "") + "/storage";
+}

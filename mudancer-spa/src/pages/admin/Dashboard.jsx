@@ -15,18 +15,23 @@ function fmtDate(str) {
 function LeadCard({ lead, onClick, isNew }) {
   const createdDate = fmtDate(lead.created_at);
   const idealDate   = fmtDate(lead.ideal_date);
+  const origin      = [lead.origin_city, lead.origin_state].filter(Boolean).join(", ") || "—";
+  const destination = [lead.destination_city, lead.destination_state].filter(Boolean).join(", ") || "—";
 
   return (
     <div
       onClick={onClick}
       style={{
-        background: "#fff",
+        background:   isNew ? "#f0fdf4" : "#fff",
         borderRadius: 14,
-        border: isNew ? "2px solid #22c55e" : "1.5px solid #e5e7eb",
-        padding: "0.875rem 1.125rem",
-        cursor: "pointer",
-        transition: "box-shadow 0.18s, transform 0.15s",
-        boxShadow: isNew ? "0 2px 12px rgba(34,197,94,0.18)" : "0 1px 4px rgba(0,0,0,0.06)",
+        border:       isNew ? "2px solid #22c55e" : "1.5px solid #e5e7eb",
+        padding:      "0.875rem 1rem",
+        cursor:       "pointer",
+        transition:   "box-shadow 0.18s, transform 0.15s",
+        boxShadow:    isNew ? "0 2px 12px rgba(34,197,94,0.18)" : "0 1px 4px rgba(0,0,0,0.06)",
+        display:      "flex",
+        flexDirection:"column",
+        gap:          "0.375rem",
       }}
       onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.12)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
       onMouseLeave={(e) => {
@@ -34,41 +39,67 @@ function LeadCard({ lead, onClick, isNew }) {
         e.currentTarget.style.transform = "translateY(0)";
       }}
     >
-      {/* Top row: date | ID | name */}
-      <div style={{ display: "flex", alignItems: "baseline", flexWrap: "wrap", gap: "0.25rem", marginBottom: "0.375rem" }}>
-        {isNew && (
-          <span style={{ fontSize: "0.65rem", fontWeight: 700, background: "#22c55e", color: "#fff", borderRadius: 20, padding: "2px 7px", marginRight: 4, letterSpacing: "0.05em" }}>NUEVO</span>
-        )}
-        <span style={{ fontSize: "0.9375rem", fontWeight: isNew ? 700 : 500, color: "#1e293b" }}>
-          {createdDate}
-        </span>
-        <span style={{ color: "#94a3b8", fontSize: "0.8125rem" }}>|</span>
-        <span style={{ fontSize: "0.9375rem", fontWeight: isNew ? 700 : 500, color: "#1e5a9e" }}>
-          ID {lead.public_id || lead.id}
-        </span>
-        <span style={{ color: "#94a3b8", fontSize: "0.8125rem" }}>|</span>
-        <span style={{ fontSize: "0.9375rem", fontWeight: isNew ? 700 : 500, color: "#1e293b", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {lead.client_name || "—"}
-        </span>
-      </div>
-
-      {/* Origin → Destination */}
-      <p style={{ margin: "0 0 0.125rem", fontSize: "0.875rem", fontWeight: 500, color: "#16a34a" }}>
-        {[lead.origin_state, lead.origin_city].filter(Boolean).join(", ") || "—"}
-      </p>
-      <p style={{ margin: "0 0 0.5rem", fontSize: "0.875rem", fontWeight: 500, color: "#dc2626" }}>
-        {[lead.destination_state, lead.destination_city].filter(Boolean).join(", ") || "—"}
-      </p>
-
-      {/* Bottom row: phone + date */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        {lead.client_phone && (
-          <span style={{ fontSize: "0.8rem", color: "#374151", fontWeight: 600 }}>
-            📞 {lead.client_phone}
+      {/* Row 1: NEW badge + created date + ideal date */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+          {isNew && (
+            <span style={{ fontSize: "0.65rem", fontWeight: 700, background: "#22c55e", color: "#fff", borderRadius: 20, padding: "2px 8px", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+              NUEVO
+            </span>
+          )}
+          <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>{createdDate}</span>
+        </div>
+        {idealDate !== "—" && (
+          <span style={{ fontSize: "0.78rem", color: "#64748b", whiteSpace: "nowrap" }}>
+            📅 {idealDate}
           </span>
         )}
-        <span style={{ fontSize: "0.8rem", color: "#64748b", marginLeft: "auto" }}>{idealDate}</span>
       </div>
+
+      {/* Row 2: Client name */}
+      <p style={{
+        margin: 0,
+        fontWeight: 700,
+        fontSize: "0.9375rem",
+        color: "#1e293b",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}>
+        {lead.client_name || "—"}
+      </p>
+
+      {/* Row 3: Origin → Destination */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flexWrap: "wrap" }}>
+        <span style={{
+          background: "#f0fdf4", color: "#15803d",
+          border: "1px solid #bbf7d0",
+          borderRadius: 6, padding: "2px 8px",
+          fontSize: "0.78rem", fontWeight: 500,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          maxWidth: "calc(50% - 1rem)",
+        }}>
+          📍 {origin}
+        </span>
+        <span style={{ color: "#9ca3af", fontSize: "0.75rem", flexShrink: 0 }}>→</span>
+        <span style={{
+          background: "#fef2f2", color: "#dc2626",
+          border: "1px solid #fecaca",
+          borderRadius: 6, padding: "2px 8px",
+          fontSize: "0.78rem", fontWeight: 500,
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          maxWidth: "calc(50% - 1rem)",
+        }}>
+          🏁 {destination}
+        </span>
+      </div>
+
+      {/* Row 4: Phone (if available) */}
+      {lead.client_phone && (
+        <p style={{ margin: 0, fontSize: "0.78rem", color: "#374151", fontWeight: 600 }}>
+          📞 {lead.client_phone}
+        </p>
+      )}
     </div>
   );
 }
@@ -144,76 +175,101 @@ export default function Dashboard() {
   const newCount = allLeads.filter(l => l.is_new).length;
 
   return (
-    <div style={{ maxWidth: 560, margin: "0 auto", padding: "1.25rem 1rem 2.5rem" }}>
+    <>
+      {/* Responsive grid CSS */}
+      <style>{`
+        .admin-leads-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0.625rem;
+        }
+        @media (min-width: 640px) {
+          .admin-leads-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 1024px) {
+          .admin-leads-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .admin-leads-search:focus {
+          outline: none;
+          border-color: #22c55e !important;
+          box-shadow: 0 0 0 3px rgba(34,197,94,0.15);
+        }
+      `}</style>
 
-      {/* Title */}
-      <h1 style={{ textAlign: "center", fontWeight: 700, fontSize: "0.875rem", letterSpacing: "0.12em", color: "#64748b", textTransform: "uppercase", margin: "0 0 1rem" }}>
-        NUEVOS LEADS
-        {newCount > 0 && (
-          <span style={{ marginLeft: 8, background: "#22c55e", color: "#fff", borderRadius: 20, fontSize: "0.7rem", padding: "2px 8px", fontWeight: 700, verticalAlign: "middle" }}>
-            {newCount} new
-          </span>
-        )}
-      </h1>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "1.25rem 1rem 2.5rem" }}>
 
-      {/* Search */}
-      <div style={{ position: "relative", marginBottom: "1rem" }}>
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(e) => handleSearchInput(e.target.value)}
-          placeholder="Search by name, ID, origin or destination…"
-          style={{
-            width: "100%", padding: "0.625rem 2.5rem 0.625rem 0.875rem",
-            fontSize: "0.9rem", fontFamily: "inherit",
-            border: "1.5px solid #e5e7eb", borderRadius: 10,
-            outline: "none", color: "#1e293b", background: "#fff",
-            boxSizing: "border-box", transition: "border-color 0.2s",
-          }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "#22c55e")}
-          onBlur={(e) => (e.currentTarget.style.borderColor = "#e5e7eb")}
-        />
-        <span style={{ position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: "1rem", pointerEvents: "none" }}>🔍</span>
-      </div>
+        {/* Title */}
+        <h1 style={{ fontWeight: 800, fontSize: "1.25rem", color: "#1e293b", margin: "0 0 1rem", letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+          Nuevos Leads
+          {newCount > 0 && (
+            <span style={{ background: "#22c55e", color: "#fff", borderRadius: 20, fontSize: "0.7rem", padding: "3px 10px", fontWeight: 700, letterSpacing: "0.04em" }}>
+              {newCount} nuevo{newCount !== 1 ? "s" : ""}
+            </span>
+          )}
+        </h1>
 
-      {/* Content */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
-          <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>Loading leads…
+        {/* Search */}
+        <div style={{ position: "relative", marginBottom: "1.25rem" }}>
+          <input
+            className="admin-leads-search"
+            type="text"
+            value={searchInput}
+            onChange={(e) => handleSearchInput(e.target.value)}
+            placeholder="Buscar por nombre, origen, destino…"
+            style={{
+              width: "100%", padding: "0.625rem 2.5rem 0.625rem 0.875rem",
+              fontSize: "0.9rem", fontFamily: "inherit",
+              border: "1.5px solid #e5e7eb", borderRadius: 10,
+              color: "#1e293b", background: "#fff",
+              boxSizing: "border-box", transition: "border-color 0.2s",
+            }}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "#22c55e")}
+            onBlur={(e) => (e.currentTarget.style.borderColor = "#e5e7eb")}
+          />
+          <span style={{ position: "absolute", right: "0.875rem", top: "50%", transform: "translateY(-50%)", color: "#94a3b8", fontSize: "1rem", pointerEvents: "none" }}>🔍</span>
         </div>
-      ) : error ? (
-        <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "1rem", textAlign: "center" }}>{error}</div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📋</div>
-          {q ? `Sin resultados para "${search}"` : "No hay nuevos leads aún."}
-        </div>
-      ) : (
-        <>
-          <p style={{ margin: "0 0 0.75rem", fontSize: "0.8rem", color: "#94a3b8" }}>
-            {filtered.length} lead{filtered.length !== 1 ? "s" : ""}
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
-            {filtered.map((lead) => (
-              <LeadCard
-                key={lead.id}
-                lead={lead}
-                isNew={!!lead.is_new}
-                onClick={() => setSelectedLeadId(lead.id)}
-              />
-            ))}
+
+        {/* Content */}
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
+            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>⏳</div>Cargando leads…
           </div>
-        </>
-      )}
+        ) : error ? (
+          <div style={{ background: "#fee2e2", color: "#dc2626", borderRadius: 10, padding: "1rem", textAlign: "center" }}>{error}</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "3rem 0", color: "#94a3b8" }}>
+            <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📋</div>
+            <p style={{ margin: 0, fontSize: "0.9rem" }}>
+              {q ? `Sin resultados para "${search}"` : "No hay nuevos leads aún."}
+            </p>
+          </div>
+        ) : (
+          <>
+            <p style={{ margin: "0 0 0.75rem", fontSize: "0.8rem", color: "#94a3b8" }}>
+              {filtered.length} lead{filtered.length !== 1 ? "s" : ""}
+            </p>
+            <div className="admin-leads-grid">
+              {filtered.map((lead) => (
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  isNew={!!lead.is_new}
+                  onClick={() => setSelectedLeadId(lead.id)}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
-      {/* Lead detail modal */}
-      {selectedLeadId !== null && (
-        <LeadModal
-          leadId={selectedLeadId}
-          onClose={() => setSelectedLeadId(null)}
-          onLeadUpdated={handleLeadUpdated}
-        />
-      )}
-    </div>
+        {/* Lead detail modal */}
+        {selectedLeadId !== null && (
+          <LeadModal
+            leadId={selectedLeadId}
+            onClose={() => setSelectedLeadId(null)}
+            onLeadUpdated={handleLeadUpdated}
+          />
+        )}
+      </div>
+    </>
   );
 }

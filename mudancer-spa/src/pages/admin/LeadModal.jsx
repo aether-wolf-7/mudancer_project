@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { getLead, updateLead, publishLead, adjudicarLead, concluirLead } from "../../api/adminApi";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { getLead, updateLead, publishLead, adjudicarLead, concluirLead, uploadLeadImagen, removeLeadImagen } from "../../api/adminApi";
 
 // ── Small helpers ────────────────────────────────────────────────────────────
 
@@ -188,20 +188,54 @@ function buildClientWaUrl(lead) {
   if (!lead?.telefono_cliente) return null;
   const phone = lead.telefono_cliente.replace(/\D/g, "");
   const intl  = phone.length === 10 ? `521${phone}` : phone;
-  const msg   = encodeURIComponent(
-    `Hola ${lead.nombre_cliente ?? ""}, le contactamos de Mudancer respecto a su solicitud de mudanza (ID: ${lead.lead_id ?? lead.id}). ¿Podría confirmar los detalles de su mudanza?`
-  );
-  return `https://wa.me/${intl}?text=${msg}`;
+
+  const yn = (v) => (v ? "Sí" : "No");
+  const v  = (x) => x || "";
+
+  const msg = [
+    `Buen día *${v(lead.nombre_cliente)}*, hemos recibido su solicitud de mudanza. Mi nombre es *Adrián Antonio y le atiendo personalmente.*`,
+    ``,
+    `👉 *¿Podrá verificar si está completa su lista?* Es importante que sea lo más detallado posible.`,
+    `Si cuenta con fotos, nos sería de mucha ayuda para calcular mejor la carga.`,
+    ``,
+    `Quedo atento para elaborar su cotización:`,
+    ``,
+    `${v(lead.lead_id || lead.public_id)} | ${v(lead.nombre_cliente)}`,
+    ``,
+    `Fecha ideal del servicio: ${v(lead.fecha_recoleccion)}`,
+    ``,
+    `Origen: ${[v(lead.localidad_origen), v(lead.estado_origen)].filter(Boolean).join(", ")}`,
+    `Niveles o Piso: ${v(lead.piso_origen)}`,
+    `Elevador: ${lead.elevador_origen !== undefined && lead.elevador_origen !== null ? yn(lead.elevador_origen) : ""}`,
+    `Acarreo: ${v(lead.acarreo_origen)}`,
+    ``,
+    `Destino: ${[v(lead.localidad_destino), v(lead.estado_destino)].filter(Boolean).join(", ")}`,
+    `Niveles o Piso: ${v(lead.piso_destino)}`,
+    `Elevador: ${lead.elevador_destino !== undefined && lead.elevador_destino !== null ? yn(lead.elevador_destino) : ""}`,
+    `Acarreo: ${v(lead.acarreo_destino)}`,
+    `Inventario: ${v(lead.inventario)}`,
+    `Empaque: ${v(lead.empaque)}`,
+    `Objetos pesados y/o delicados: ${v(lead.articulos_delicados)}`,
+    ``,
+    `Modalidad del servicio: ${v(lead.modalidad)}`,
+    `Seguro: ${v(lead.seguro)}`,
+    `Gracias.`,
+  ].join("\n");
+
+  return `https://wa.me/${intl}?text=${encodeURIComponent(msg)}`;
 }
 
 export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
-  const [lead, setLead]       = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState(false);
+  const [lead, setLead]             = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [saving, setSaving]         = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [error, setError]     = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [error, setError]           = useState(null);
+  const [success, setSuccess]       = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [imgUploading, setImgUploading]   = useState(false);
+  const [removingPath, setRemovingPath]   = useState(null);
+  const fileInputRef = useRef(null);
 
   const fetchLead = useCallback(() => {
     setLoading(true);
@@ -287,6 +321,53 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
     }
   }
 
+  const MAX_FILE_MB = 20;
+  const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+
+  async function handleImagesChange(e) {
+    const all = Array.from(e.target.files ?? []);
+    e.target.value = "";   // reset so same file can be re-selected later
+    if (!all.length) return;
+
+    // Client-side size guard
+    const tooBig = all.filter((f) => f.size > MAX_FILE_BYTES);
+    if (tooBig.length) {
+      const names = tooBig.map((f) => `${f.name} (${(f.size / 1024 / 1024).toFixed(1)} MB)`).join(", ");
+      setError(`El archivo es demasiado grande (máximo ${MAX_FILE_MB} MB por archivo): ${names}`);
+      return;
+    }
+
+    setImgUploading(true);
+    setError(null);
+    try {
+      const res = await uploadLeadImagen(leadId, all);
+      setLead((prev) => prev ? { ...prev, imagenes: res.imagenes, imagenes_urls: res.imagenes_urls } : null);
+      setSuccess(`${all.length > 1 ? all.length + " archivos subidos" : "Archivo subido"} correctamente.`);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || "";
+      const isSize = /too large|file size|max|demasiado/i.test(msg);
+      setError(isSize
+        ? `El archivo es demasiado grande. El tamaño máximo permitido es ${MAX_FILE_MB} MB.`
+        : msg || "Error al subir el archivo.");
+    } finally {
+      setImgUploading(false);
+    }
+  }
+
+  async function handleRemoveImagen(path) {
+    if (!path) return;
+    setRemovingPath(path);
+    setError(null);
+    try {
+      const res = await removeLeadImagen(leadId, path);
+      setLead((prev) => prev ? { ...prev, imagenes: res.imagenes, imagenes_urls: res.imagenes_urls } : null);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+    } finally {
+      setRemovingPath(null);
+    }
+  }
+
   const displayId = lead?.public_id || lead?.lead_id || lead?.id || leadId;
 
   return (
@@ -304,7 +385,7 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
       <div
         style={{
           position: "fixed", top: 0, right: 0, bottom: 0,
-          width: "min(460px, 100vw)",
+          width: "min(480px, 100vw)",
           zIndex: 1001,
           background: "#fff",
           overflowY: "auto",
@@ -312,6 +393,12 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
           display: "flex", flexDirection: "column",
         }}
       >
+        <style>{`
+          .lm-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+          @media (max-width: 480px) { .lm-grid-2 { grid-template-columns: 1fr; gap: 6px; } }
+          .lm-toggle-row { display:flex; gap:16px; margin-bottom:14px; flex-wrap:wrap; }
+          .lm-input:focus { border-color:#22c55e !important; box-shadow:0 0 0 3px rgba(34,197,94,0.12); }
+        `}</style>
         {/* Header */}
         <div
           style={{
@@ -395,7 +482,7 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
 
               {/* ── Origin ── */}
               <SectionTitle>Origin</SectionTitle>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="lm-grid-2">
                 <FieldBlock label="State">
                   <Input name="estado_origen" value={lead.estado_origen} onChange={handleChange} />
                 </FieldBlock>
@@ -409,12 +496,12 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                   <Input name="piso_origen" value={lead.piso_origen} onChange={handleChange} placeholder="e.g. Ground" />
                 </FieldBlock>
               </div>
-              <div style={{ display: "flex", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#374151", cursor: "pointer" }}>
+              <div className="lm-toggle-row">
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#374151", cursor: "pointer", flexShrink: 0 }}>
                   <input type="checkbox" name="elevador_origen" checked={!!lead.elevador_origen} onChange={handleChange} style={{ width: 16, height: 16, accentColor: "#22c55e" }} />
                   Elevator at origin
                 </label>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: "160px" }}>
                   <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2, fontWeight: 500 }}>Acarreo origen</p>
                   <Input name="acarreo_origen" type="text" value={lead.acarreo_origen ?? ""} onChange={handleChange} placeholder="e.g. A menos de 30 mts." />
                 </div>
@@ -422,7 +509,7 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
 
               {/* ── Destination ── */}
               <SectionTitle>Destination</SectionTitle>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="lm-grid-2">
                 <FieldBlock label="State">
                   <Input name="estado_destino" value={lead.estado_destino} onChange={handleChange} />
                 </FieldBlock>
@@ -436,12 +523,12 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                   <Input name="piso_destino" value={lead.piso_destino} onChange={handleChange} placeholder="e.g. Ground" />
                 </FieldBlock>
               </div>
-              <div style={{ display: "flex", gap: 16, marginBottom: 14, flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#374151", cursor: "pointer" }}>
+              <div className="lm-toggle-row">
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "#374151", cursor: "pointer", flexShrink: 0 }}>
                   <input type="checkbox" name="elevador_destino" checked={!!lead.elevador_destino} onChange={handleChange} style={{ width: 16, height: 16, accentColor: "#22c55e" }} />
                   Elevator at destination
                 </label>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: 1, minWidth: "160px" }}>
                   <p style={{ fontSize: 11, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2, fontWeight: 500 }}>Acarreo destino</p>
                   <Input name="acarreo_destino" type="text" value={lead.acarreo_destino ?? ""} onChange={handleChange} placeholder="e.g. Acarreo de 30 a 40 mts." />
                 </div>
@@ -453,7 +540,7 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                 <Input name="empaque" value={lead.empaque} onChange={handleChange} placeholder="Packing type" />
               </FieldBlock>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="lm-grid-2">
                 <FieldBlock label="Fecha de Recolección">
                   <Input name="fecha_recoleccion" type="date" value={lead.fecha_recoleccion ?? ""} onChange={handleChange} />
                 </FieldBlock>
@@ -486,6 +573,117 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
               <FieldBlock label="Observations">
                 <Textarea name="observaciones" value={lead.observaciones} onChange={handleChange} rows={3} placeholder="Any special notes…" />
               </FieldBlock>
+
+              {/* ── Imágenes del inventario ── */}
+              <SectionTitle>Fotos / Videos del inventario</SectionTitle>
+
+              {/* Gallery grid */}
+              {(() => {
+                const paths = lead.imagenes ?? [];
+                const urls  = lead.imagenes_urls ?? [];
+                if (!paths.length) return null;
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+                    {paths.map((path, i) => {
+                      const url       = urls[i] || "";
+                      const isVideo   = /\.(mp4|mov|avi|webm|quicktime)$/i.test(url || path);
+                      const isRemoving = removingPath === path;
+                      return (
+                        <div
+                          key={path}
+                          style={{
+                            position: "relative", borderRadius: 8, overflow: "hidden",
+                            border: "1px solid #e5e7eb", aspectRatio: "1",
+                            background: "#f3f4f6",
+                            opacity: isRemoving ? 0.4 : 1,
+                            transition: "opacity 0.2s",
+                          }}
+                        >
+                          {isVideo ? (
+                            <video
+                              src={url}
+                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                              muted
+                              playsInline
+                            />
+                          ) : (
+                            <img
+                              src={url}
+                              alt={`Inventario ${i + 1}`}
+                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                            />
+                          )}
+                          {isVideo && (
+                            <div style={{
+                              position: "absolute", inset: 0,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              background: "rgba(0,0,0,0.25)", fontSize: 28, pointerEvents: "none",
+                            }}>▶</div>
+                          )}
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            disabled={isRemoving || !!removingPath}
+                            onClick={() => handleRemoveImagen(path)}
+                            title="Eliminar"
+                            style={{
+                              position: "absolute", top: 4, right: 4,
+                              width: 22, height: 22,
+                              borderRadius: "50%",
+                              background: "rgba(239,68,68,0.9)",
+                              border: "none",
+                              color: "#fff",
+                              fontSize: 13,
+                              fontWeight: 700,
+                              cursor: isRemoving ? "not-allowed" : "pointer",
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              lineHeight: 1,
+                              padding: 0,
+                              boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* Hidden multi-file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                style={{ display: "none" }}
+                onChange={handleImagesChange}
+              />
+              <button
+                type="button"
+                disabled={imgUploading}
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: "100%",
+                  padding: "11px 0",
+                  background: imgUploading ? "#f3f4f6" : "#f0fdf4",
+                  color: imgUploading ? "#9ca3af" : "#16a34a",
+                  border: "1.5px dashed " + (imgUploading ? "#d1d5db" : "#86efac"),
+                  borderRadius: 10,
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: imgUploading ? "not-allowed" : "pointer",
+                  marginBottom: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                <span style={{ fontSize: 18 }}>📷</span>
+                {imgUploading ? "Subiendo…" : "Agregar fotos / videos"}
+              </button>
 
               {/* ── Public URL (when published) ── */}
               {lead.publicada && lead.public_url && (

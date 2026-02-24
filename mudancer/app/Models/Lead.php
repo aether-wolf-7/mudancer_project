@@ -19,10 +19,12 @@ class Lead extends Model
         'elevador_destino', 'acarreo_destino',
         'empaque', 'fecha_recoleccion', 'fecha_entrega', 'tiempo_estimado', 'modalidad', 'seguro',
         'inventario', 'inventario_recoleccion', 'articulos_delicados', 'observaciones',
+        'imagen_path', 'imagenes',
         'publicada', 'adjudicada', 'concluida', 'vista',
     ];
 
     protected $casts = [
         'inventario_recoleccion' => 'array',
+        'imagenes'               => 'array',
     ];
 }
