@@ -14,6 +14,9 @@ Route::post('webhook/wpforms', [LeadController::class, 'receiveFromWPForms']);
 // Public shareable PDF — no auth, protected by 32-char random token
 Route::get('pdf/share/{token}/{type}', [PdfController::class, 'publicPdf']);
 
+// Temporary one-time PDF download — valid for 120 seconds, works on all devices/mobile
+Route::get('pdf/tmp/{token}', [PdfController::class, 'tempPdf']);
+
 // Public lead link resolver — used by the deep-link redirect page
 Route::get('leads/link/{leadId}/{token}', [ProveedorController::class, 'resolveLink']);
 
@@ -40,6 +43,7 @@ Route::prefix('admin')->group(function () {
         Route::post('quotes/{quote}/asignar', [AdminLeadController::class, 'assignQuote']);
         Route::post('quotes/{quote}/marcar-pago', [AdminLeadController::class, 'marcarPago']);
         Route::get('quotes/{quote}/pdf/{type}', [PdfController::class, 'adminPdf']);
+        Route::post('quotes/{quote}/pdf-token/{type}', [PdfController::class, 'adminPdfToken']);
         Route::post('quotes/{quote}/share-token', [PdfController::class, 'generateShareToken']);
 
         Route::apiResource('providers', AdminProviderController::class);
@@ -60,6 +64,7 @@ Route::prefix('proveedor')->group(function () {
         Route::get('ordenes/{quote}/inventario', [ProveedorController::class, 'getInventario']);
         Route::put('ordenes/{quote}/inventario', [ProveedorController::class, 'saveInventario']);
         Route::get('quotes/{quote}/pdf/{type}', [PdfController::class, 'providerPdf']);
+        Route::post('quotes/{quote}/pdf-token/{type}', [PdfController::class, 'providerPdfToken']);
         Route::post('quotes/{quote}/share-token', [PdfController::class, 'providerShareToken']);
     });
 });

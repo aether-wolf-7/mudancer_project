@@ -8,6 +8,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class PdfController extends Controller
@@ -72,6 +73,50 @@ class PdfController extends Controller
     }
 
     /**
+     * Admin: create a short-lived (120 sec) one-time download URL for a PDF.
+     * POST /api/admin/quotes/{quote}/pdf-token/{type}
+     * Returns { url: "https://...api/pdf/tmp/{token}" }
+     */
+    public function adminPdfToken(Request $request, Quote $quote, string $type): JsonResponse
+    {
+        $this->validateType($type);
+        return response()->json(['url' => $this->makeTempUrl($quote->id, $type)]);
+    }
+
+    /**
+     * Provider: create a short-lived download URL for their own quote PDF.
+     * POST /api/proveedor/quotes/{quote}/pdf-token/{type}
+     */
+    public function providerPdfToken(Request $request, Quote $quote, string $type): JsonResponse
+    {
+        $this->validateType($type, ['cotizacion', 'ods-proveedor']);
+
+        $user     = auth()->user();
+        $provider = \App\Models\Provider::where('email', $user->email)->first();
+        if (! $provider || (int) $quote->provider_id !== $provider->id) {
+            abort(403, 'Access denied.');
+        }
+
+        return response()->json(['url' => $this->makeTempUrl($quote->id, $type)]);
+    }
+
+    /**
+     * Public: serve a PDF using a one-time temporary token (120 sec TTL).
+     * GET /api/pdf/tmp/{token}
+     */
+    public function tempPdf(Request $request, string $token): Response
+    {
+        $payload = Cache::pull("pdf_tmp_{$token}");
+
+        if (! $payload) {
+            abort(404, 'Link expirado o inválido.');
+        }
+
+        $quote = Quote::findOrFail($payload['quote_id']);
+        return $this->buildPdf($quote, $payload['type']);
+    }
+
+    /**
      * Generate (or return existing) share token for a quote.
      * POST /api/admin/quotes/{quote}/share-token
      * Returns shareable URLs for all three document types.
@@ -133,6 +178,19 @@ class PdfController extends Controller
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
+    /**
+     * Store a one-time payload in cache (120 sec) and return the public URL.
+     */
+    private function makeTempUrl(int $quoteId, string $type): string
+    {
+        $token = Str::random(32);
+        Cache::put("pdf_tmp_{$token}", ['quote_id' => $quoteId, 'type' => $type], 120);
+        $base = rtrim(env('APP_URL', 'https://app.mudancer.com'), '/');
+        // Strip trailing /api if APP_URL includes it
+        $base = preg_replace('#/api$#', '', $base);
+        return "{$base}/api/pdf/tmp/{$token}";
+    }
+
     private function validateType(string $type, array $allowed = null): void
     {
         $valid = $allowed ?? array_keys(self::TYPES);
@@ -163,6 +221,14 @@ class PdfController extends Controller
             $provider->nombre ? \Str::slug($provider->nombre) : null,
         ])) . '.pdf';
 
-        return $pdf->download($filename);
+        $content = $pdf->output();
+
+        return response($content, 200, [
+            'Content-Type'           => 'application/pdf',
+            'Content-Disposition'    => 'inline; filename="' . $filename . '"',
+            'Content-Length'         => strlen($content),
+            'Cache-Control'          => 'no-store, no-cache, must-revalidate',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 }

@@ -175,29 +175,31 @@ export default function ProveedorLogin() {
           }}
         >
           {/* Badge */}
-          <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-            <div
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <img
+              src="/mudancer-logo.png?v=3"
+              alt="Mudancer"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                fontWeight: 800,
-                fontSize: "1.375rem",
-                color: "#1e40af",
-                letterSpacing: "-0.01em",
+                width: "clamp(120px, 45vw, 180px)",
+                height: "auto",
+                objectFit: "contain",
+                display: "block",
               }}
-            >
-              <span style={{ fontSize: "2rem" }}>🏢</span>
-              <span>
-                Panel<br />
-                <span style={{ fontWeight: 600, color: "#2563eb" }}>Proveedor</span>
-              </span>
-            </div>
+            />
             <p
               style={{
                 marginTop: "0.875rem",
                 fontSize: "0.875rem",
                 color: "#64748b",
+                textAlign: "center",
               }}
             >
               Accede para gestionar leads y cotizaciones

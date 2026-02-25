@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getOrdenes, concluirLead, downloadQuotePdf, marcarPago, generateShareToken } from "../../api/adminApi";
-import { apiBase } from "../../api/pdfUtils.js";
+import { getOrdenes, concluirLead, getPdfTempUrl, marcarPago, generateShareToken } from "../../api/adminApi";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -53,17 +52,29 @@ function ProviderAvatar({ logo, nombre, size = 44 }) {
 
 // ── PDF Download Button ───────────────────────────────────────────────────────
 
-function PdfButton({ label, quoteId, type, filename, compact = false }) {
+function PdfButton({ label, quoteId, type, compact = false }) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
 
   async function handleClick() {
-    setLoading(true);
     setError(null);
+
+    // Open the window IMMEDIATELY while the tap/click is still a user gesture.
+    // Mobile browsers (iOS Safari, Android Chrome) block window.open() called
+    // after an await, so we must open first and redirect once the URL is ready.
+    const win = window.open("", "_blank");
+    if (!win) {
+      setError("Tu navegador bloqueó la ventana. Permite ventanas emergentes para este sitio e intenta de nuevo.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      await downloadQuotePdf(quoteId, type, filename);
+      const url = await getPdfTempUrl(quoteId, type);
+      win.location.href = url;
     } catch (err) {
-      setError(err.message || "Download failed");
+      win.close();
+      setError(err.response?.data?.message || err.message || "Error al generar PDF");
     } finally {
       setLoading(false);
     }
@@ -88,7 +99,7 @@ function PdfButton({ label, quoteId, type, filename, compact = false }) {
         onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = "#f0fdf4"; }}
         onMouseLeave={(e) => { if (!loading) e.currentTarget.style.background = loading ? "#f0fdf4" : "#fff"; }}
       >
-        {loading ? "⏳ Generating…" : label}
+        {loading ? "⏳ Generando…" : label}
       </button>
       {error && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#dc2626" }}>{error}</p>}
     </div>
@@ -146,7 +157,7 @@ function ShareLinkButton({ quoteId, docType }) {
 
 // ── Doc Row (Download + Share pair) ──────────────────────────────────────────
 
-function DocRow({ label, quoteId, type, filename }) {
+function DocRow({ label, quoteId, type }) {
   return (
     <div style={{ borderRadius: 12, border: "1.5px solid #e5e7eb", overflow: "hidden" }}>
       <p style={{ margin: 0, padding: "7px 12px 0", fontSize: 11, color: "#9ca3af", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -154,7 +165,7 @@ function DocRow({ label, quoteId, type, filename }) {
       </p>
       <div style={{ display: "flex", gap: 8, padding: "6px 10px 10px" }}>
         <div style={{ flex: 1 }}>
-          <PdfButton label="⬇ Download" quoteId={quoteId} type={type} filename={filename} compact />
+          <PdfButton label="⬇ Ver PDF" quoteId={quoteId} type={type} compact />
         </div>
         <div style={{ flex: 1 }}>
           <ShareLinkButton quoteId={quoteId} docType={type} />
@@ -345,9 +356,9 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
             Documentos
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <DocRow label="Cotización" quoteId={q.id} type="cotizacion" filename={`COTIZACION-${order.lead_id || order.id}.pdf`} />
-            <DocRow label="ODS Cliente" quoteId={q.id} type="ods-cliente" filename={`ODS-CLIENTE-${order.lead_id || order.id}.pdf`} />
-            <DocRow label="ODS Proveedor" quoteId={q.id} type="ods-proveedor" filename={`ODS-PROVEEDOR-${order.lead_id || order.id}.pdf`} />
+            <DocRow label="Cotización" quoteId={q.id} type="cotizacion" />
+            <DocRow label="ODS Cliente" quoteId={q.id} type="ods-cliente" />
+            <DocRow label="ODS Proveedor" quoteId={q.id} type="ods-proveedor" />
           </div>
         </div>
       )}

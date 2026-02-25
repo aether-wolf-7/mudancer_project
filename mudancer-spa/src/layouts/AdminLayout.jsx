@@ -169,16 +169,18 @@ export default function AdminLayout() {
           {/* Logo */}
           <Link
             to="/admin/leads"
-            style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}
+            style={{ textDecoration: "none", display: "flex", alignItems: "center", flexShrink: 0 }}
           >
-            <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>🚛</span>
-            <span style={{
-              fontWeight: 800, fontSize: "1rem",
-              color: "#1e5a9e", letterSpacing: "-0.01em", lineHeight: 1.15,
-            }}>
-              Reliable<br />
-              <span style={{ fontWeight: 600, color: "#22c55e", fontSize: "0.8125rem" }}>Moving Admin</span>
-            </span>
+            <img
+              src="/mudancer-logo.png?v=3"
+              alt="Mudancer"
+              style={{
+                height: "clamp(48px, 9vw, 66px)",
+                width: "auto",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
           </Link>
 
           {/* Desktop center nav */}

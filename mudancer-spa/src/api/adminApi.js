@@ -114,8 +114,16 @@ export async function marcarPago(quoteId) {
 }
 
 /**
- * Download a PDF document for a quote (admin).
+ * Get a temporary (120 sec) one-time PDF URL — works on mobile and desktop.
  * type: 'cotizacion' | 'ods-cliente' | 'ods-proveedor'
+ */
+export async function getPdfTempUrl(quoteId, type) {
+  const { data } = await api.post(`/admin/quotes/${quoteId}/pdf-token/${type}`);
+  return data.url;
+}
+
+/**
+ * @deprecated Use getPdfTempUrl() + window.open() instead for mobile compatibility.
  */
 export async function downloadQuotePdf(quoteId, type, filename) {
   const url = `${apiBase()}/admin/quotes/${quoteId}/pdf/${type}`;

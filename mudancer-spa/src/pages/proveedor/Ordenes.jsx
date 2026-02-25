@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getOrdenes, downloadQuotePdf, getInventario, saveInventario, generateShareToken } from "../../api/proveedorApi";
+import { getOrdenes, getPdfTempUrl, getInventario, saveInventario, generateShareToken } from "../../api/proveedorApi";
 
 const ADMIN_WA = (import.meta.env.VITE_WHATSAPP_ADMIN ?? "").replace(/\D/g, "");
 
@@ -44,15 +44,28 @@ function buildConcluirWaUrl(quote) {
   return `https://wa.me/${ADMIN_WA}?text=${msg}`;
 }
 
-// ── PDF Button ─────────────────────────────────────────────────────────────────
-function PdfBtn({ quoteId, type, label, leadId }) {
+// ── PDF Button — mobile-compatible via one-time temp URL ──────────────────────
+function PdfBtn({ quoteId, type, label }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr]   = useState(null);
 
   async function handle() {
-    setBusy(true); setErr(null);
-    try { await downloadQuotePdf(quoteId, type, `${type.toUpperCase()}-${leadId || quoteId}.pdf`); }
-    catch (e) { setErr(e.message); }
+    setErr(null);
+
+    // Open window synchronously inside the user gesture so mobile browsers allow it.
+    // After the async fetch completes, redirect the already-opened window to the PDF URL.
+    const win = window.open("", "_blank");
+    if (!win) {
+      setErr("Tu navegador bloqueó la ventana. Permite ventanas emergentes e intenta de nuevo.");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const url = await getPdfTempUrl(quoteId, type);
+      win.location.href = url;
+    }
+    catch (e) { win.close(); setErr(e.response?.data?.message || e.message); }
     finally { setBusy(false); }
   }
 
@@ -323,10 +336,10 @@ function OrderCard({ quote }) {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-2 mt-1">
-                <PdfBtn  quoteId={quote.id} type="cotizacion"    label="Cotización PDF"  leadId={lead?.lead_id} />
+                <PdfBtn  quoteId={quote.id} type="cotizacion"    label="Cotización PDF" />
                 <ShareBtn quoteId={quote.id} docType="cotizacion"    label="Link Cotización" />
-                <PdfBtn  quoteId={quote.id} type="ods-proveedor" label="ODS PDF"         leadId={lead?.lead_id} />
-                <ShareBtn quoteId={quote.id} docType="ods-proveedor" label="Link ODS"        />
+                <PdfBtn  quoteId={quote.id} type="ods-proveedor" label="ODS PDF" />
+                <ShareBtn quoteId={quote.id} docType="ods-proveedor" label="Link ODS" />
                 {waUrl ? (
                   <a href={waUrl} target="_blank" rel="noopener noreferrer"
                     className="px-3 py-1.5 text-xs font-medium text-white rounded-lg inline-flex items-center gap-1"

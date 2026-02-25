@@ -48,6 +48,18 @@ export async function concludeOrder(quoteId) {
  * Download a PDF document for an assigned quote (provider).
  * type: 'cotizacion' | 'ods-proveedor'
  */
+/**
+ * Get a temporary (120 sec) one-time PDF URL — works on mobile and desktop.
+ * type: 'cotizacion' | 'ods-proveedor'
+ */
+export async function getPdfTempUrl(quoteId, type) {
+  const { data } = await proveedorApi.post(`/proveedor/quotes/${quoteId}/pdf-token/${type}`);
+  return data.url;
+}
+
+/**
+ * @deprecated Use getPdfTempUrl() + window.open() instead for mobile compatibility.
+ */
 export async function downloadQuotePdf(quoteId, type, filename) {
   const url = `${apiBase()}/proveedor/quotes/${quoteId}/pdf/${type}`;
   await downloadAuthPdf(url, getProviderToken(), filename);

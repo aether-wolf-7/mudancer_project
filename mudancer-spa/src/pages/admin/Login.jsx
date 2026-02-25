@@ -215,34 +215,24 @@ export default function AdminLogin() {
           }}
         >
           {/* Logo */}
-          <div style={{ textAlign: "center", marginBottom: "1.25rem" }}>
-            <div
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <img
+              src="/mudancer-logo.png?v=3"
+              alt="Mudancer"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                fontWeight: 800,
-                fontSize: "1.375rem",
-                color: "#1e5a9e",
-                letterSpacing: "-0.01em",
+                width: "clamp(120px, 45vw, 180px)",
+                height: "auto",
+                objectFit: "contain",
+                display: "block",
               }}
-            >
-              <span style={{ fontSize: "2rem" }}>🚛</span>
-              <span>
-                Reliable<br />
-                <span style={{ fontWeight: 600, color: "#22c55e" }}>Moving</span>
-              </span>
-            </div>
-            <p
-              style={{
-                marginTop: "0.875rem",
-                fontSize: "0.875rem",
-                color: "#64748b",
-                fontStyle: "italic",
-              }}
-            >
-              John 14:12
-            </p>
+            />
           </div>
 
           {/* Form */}

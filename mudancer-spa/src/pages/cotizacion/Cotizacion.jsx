@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { verCotizaciones, marcarInteres } from "../../api/clienteApi";
 
 const ADMIN_WA = (import.meta.env.VITE_WHATSAPP_ADMIN ?? "").replace(/\D/g, "");
+const PAYMENT_URL = (import.meta.env.VITE_PAYMENT_URL ?? "").trim();
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -51,17 +52,33 @@ function ProviderAvatar({ logo, nombre, size = 52 }) {
 function buildWhatsAppUrl(lead, quote) {
   if (!ADMIN_WA) return null;
   const provNombre = quote?.provider?.nombre ?? "el proveedor";
-  const precio     = quote?.precio_total ? fmtMoney(quote.precio_total) : "";
-  const leadId     = lead?.lead_id ?? "";
+  const precio = quote?.precio_total ? fmtMoney(quote.precio_total) : "";
+  const leadId = lead?.lead_id ?? "";
   const msg = encodeURIComponent(
     `Hola, me interesa la propuesta de ${provNombre}${precio ? ` por ${precio}` : ""} para mi mudanza.\nID de solicitud: ${leadId}\nPor favor, ¿cómo procedo con el apartado?`
   );
   return `https://wa.me/${ADMIN_WA}?text=${msg}`;
 }
 
+function buildPaymentUrl(lead, quote) {
+  if (!PAYMENT_URL) return null;
+  const url = new URL(PAYMENT_URL);
+  if (lead?.lead_id) url.searchParams.set("lead_id", lead.lead_id);
+  if (quote?.id) url.searchParams.set("quote_id", quote.id);
+  if (quote?.apartado) url.searchParams.set("amount", quote.apartado);
+  return url.toString();
+}
+
+const CARD_ICON = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+    <line x1="1" y1="10" x2="23" y2="10"/>
+  </svg>
+);
+
 const WA_ICON = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
   </svg>
 );
 
@@ -97,9 +114,9 @@ function PendingScreen({ onReset }) {
 
 function SortBar({ sort, onChange, total }) {
   const opts = [
-    { key: "precio-asc",       label: "💰 Menor precio" },
-    { key: "precio-desc",      label: "💎 Mayor precio" },
-    { key: "reputacion-desc",  label: "⭐ Mejor reputación" },
+    { key: "precio-asc", label: "💰 Menor precio" },
+    { key: "precio-desc", label: "💎 Mayor precio" },
+    { key: "reputacion-desc", label: "⭐ Mejor reputación" },
   ];
   return (
     <div style={{ marginBottom: 16 }}>
@@ -135,10 +152,11 @@ function SortBar({ sort, onChange, total }) {
 // ── Quote card ─────────────────────────────────────────────────────────────────
 
 function QuoteCard({ quote, lead, rank, isCheapest, isBestRated, cheapestPrice, onSelect, selecting }) {
-  const p            = quote.provider;
+  const p = quote.provider;
   const isInterested = quote.cliente_interesada;
   const [showWA, setShowWA] = useState(false);
   const waUrl = buildWhatsAppUrl(lead, quote);
+  const paymentUrl = buildPaymentUrl(lead, quote);
 
   const priceDiff = cheapestPrice !== null && !isCheapest
     ? quote.precio_total - cheapestPrice
@@ -161,8 +179,8 @@ function QuoteCard({ quote, lead, rank, isCheapest, isBestRated, cheapestPrice, 
       boxShadow: isCheapest && !isInterested
         ? "0 2px 14px rgba(22,163,74,0.13)"
         : isInterested
-        ? "0 2px 14px rgba(34,197,94,0.18)"
-        : "0 1px 4px rgba(0,0,0,0.06)",
+          ? "0 2px 14px rgba(34,197,94,0.18)"
+          : "0 1px 4px rgba(0,0,0,0.06)",
       overflow: "hidden",
       transition: "box-shadow 0.18s",
     }}>
@@ -258,7 +276,7 @@ function QuoteCard({ quote, lead, rank, isCheapest, isBestRated, cheapestPrice, 
         {/* ── Download PDF ── */}
         {lead?.public_token && (
           <a
-            href={`/api/cliente/quotes/${quote.id}/pdf?token=${lead.public_token}`}
+            href={`${window.location.origin}/api/cliente/quotes/${quote.id}/pdf?token=${lead.public_token}`}
             target="_blank"
             rel="noopener noreferrer"
             style={{
@@ -272,7 +290,7 @@ function QuoteCard({ quote, lead, rank, isCheapest, isBestRated, cheapestPrice, 
             onMouseEnter={(e) => { e.currentTarget.style.background = "#e2e8f0"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "#f1f5f9"; }}
           >
-            ⬇ Descargar Cotización PDF
+            📄 Ver Cotización PDF
           </a>
         )}
 
@@ -296,10 +314,10 @@ function QuoteCard({ quote, lead, rank, isCheapest, isBestRated, cheapestPrice, 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 10, padding: "12px 14px" }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "#15803d", margin: "0 0 6px" }}>
-                ✅ ¡Propuesta seleccionada!
+                ✅ PROPUESTA SELECCIONADA
               </p>
               <p style={{ fontSize: 13, color: "#166534", margin: "0 0 8px", lineHeight: 1.5 }}>
-                Para reservar tu lugar, realiza el pago del <strong>apartado</strong> y comunícate con nosotros por WhatsApp para confirmarlo.
+                Para reservar esta cotización, realiza el pago del <strong>apartado y notifícalo por whatsapp</strong> para elaborar la orden de servicio.
               </p>
               <div style={{ background: "#dcfce7", borderRadius: 8, padding: "8px 12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: 13, color: "#166534", fontWeight: 600 }}>Apartado a pagar:</span>
@@ -310,6 +328,38 @@ function QuoteCard({ quote, lead, rank, isCheapest, isBestRated, cheapestPrice, 
                 El pago final ({fmtMoney(quote.pago_final)}) se realiza a la llegada a destino.
               </p>
             </div>
+            {paymentUrl ? (
+              <a
+                href={paymentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  width: "100%", padding: "13px 0", borderRadius: 12,
+                  background: "#2563eb", color: "#fff",
+                  fontSize: 15, fontWeight: 700, textDecoration: "none",
+                  boxSizing: "border-box",
+                }}
+              >
+                {CARD_ICON}
+                Pagar Apartado
+              </a>
+            ) : (
+              <button
+                disabled
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
+                  background: "#93c5fd", color: "#fff",
+                  fontSize: 15, fontWeight: 700,
+                  cursor: "not-allowed", boxSizing: "border-box",
+                  opacity: 0.7,
+                }}
+              >
+                {CARD_ICON}
+                Pagar Apartado
+              </button>
+            )}
             {waUrl && (
               <a
                 href={waUrl}
@@ -338,14 +388,14 @@ function QuoteCard({ quote, lead, rank, isCheapest, isBestRated, cheapestPrice, 
 
 function QuotesScreen({ lead, quotes, onReset }) {
   const [localQuotes, setLocalQuotes] = useState(quotes);
-  const [selecting, setSelecting]     = useState(null);
-  const [error, setError]             = useState(null);
-  const [sort, setSort]               = useState("precio-asc");
+  const [selecting, setSelecting] = useState(null);
+  const [error, setError] = useState(null);
+  const [sort, setSort] = useState("precio-asc");
 
   // Sort & compute derived values
   const sorted = useMemo(() => {
     const arr = [...localQuotes];
-    if (sort === "precio-asc")      arr.sort((a, b) => a.precio_total - b.precio_total);
+    if (sort === "precio-asc") arr.sort((a, b) => a.precio_total - b.precio_total);
     else if (sort === "precio-desc") arr.sort((a, b) => b.precio_total - a.precio_total);
     else if (sort === "reputacion-desc") arr.sort((a, b) => (b.provider?.reputacion ?? 0) - (a.provider?.reputacion ?? 0));
     return arr;
@@ -383,7 +433,7 @@ function QuotesScreen({ lead, quotes, onReset }) {
   }
 
   const origin = [lead.localidad_origen, lead.estado_origen].filter(Boolean).join(", ");
-  const dest   = [lead.localidad_destino, lead.estado_destino].filter(Boolean).join(", ");
+  const dest = [lead.localidad_destino, lead.estado_destino].filter(Boolean).join(", ");
 
   return (
     <div>
@@ -504,10 +554,10 @@ function QuotesScreen({ lead, quotes, onReset }) {
 
 export default function Cotizacion() {
   const [telefono, setTelefono] = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState(null);
-  const [screen, setScreen]     = useState("login"); // 'login' | 'pending' | 'quotes'
-  const [result, setResult]     = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [screen, setScreen] = useState("login"); // 'login' | 'pending' | 'quotes'
+  const [result, setResult] = useState(null);
 
   function handleReset() {
     setScreen("login");
@@ -554,20 +604,20 @@ export default function Cotizacion() {
       {/* Header */}
       <div style={{
         background: "#fff", borderBottom: "1px solid #e5e7eb",
-        padding: "16px 20px", display: "flex", alignItems: "center", gap: 10,
+        padding: "12px 20px", display: "flex", alignItems: "center",
+        justifyContent: "center",
         position: "sticky", top: 0, zIndex: 10,
       }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: "50%",
-          background: "#22c55e", display: "flex", alignItems: "center",
-          justifyContent: "center", fontSize: 18,
-        }}>
-          🚛
-        </div>
-        <div>
-          <p style={{ fontWeight: 700, fontSize: 15, color: "#111827", margin: 0 }}>Mudancer</p>
-          <p style={{ fontSize: 11, color: "#9ca3af", margin: 0 }}>Compara propuestas de mudanza</p>
-        </div>
+        <img
+          src="/mudancer-logo.png?v=3"
+          alt="Mudancer"
+          style={{
+            height: "clamp(48px, 9vw, 66px)",
+            width: "auto",
+            objectFit: "contain",
+            display: "block",
+          }}
+        />
       </div>
 
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "24px 16px" }}>
@@ -576,7 +626,18 @@ export default function Cotizacion() {
         {screen === "login" && (
           <div>
             <div style={{ textAlign: "center", marginBottom: 28 }}>
-              <div style={{ fontSize: 52, marginBottom: 10 }}>📦</div>
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+                <img
+                  src="/mudancer-logo.png?v=3"
+                  alt="Mudancer"
+                  style={{
+                    width: "clamp(78px, 29vw, 117px)",
+                    height: "auto",
+                    objectFit: "contain",
+                    display: "block",
+                  }}
+                />
+              </div>
               <h1 style={{ fontWeight: 700, fontSize: 22, color: "#111827", margin: "0 0 8px" }}>
                 Ver mis cotizaciones
               </h1>

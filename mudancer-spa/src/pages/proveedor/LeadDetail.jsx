@@ -27,10 +27,6 @@ function makeProposal(index) {
     nombre_propuesta: PROPOSAL_NAMES[index] ?? `Propuesta ${index + 1}`,
     precio_total: "",
     notas: "",
-    splitOpen: false,
-    pctApartado: DEFAULT_SPLIT.apartado,
-    pctAnticipo: DEFAULT_SPLIT.anticipo,
-    pctPagoFinal: DEFAULT_SPLIT.pago_final,
   };
 }
 
@@ -38,28 +34,17 @@ function makeProposal(index) {
 function ProposalCard({ index, proposal, onChange, onRemove, canRemove, seguro }) {
   const precio      = parseFloat(proposal.precio_total);
   const precioValid = !isNaN(precio) && precio > 0;
-  const splitTotal  = proposal.pctApartado + proposal.pctAnticipo + proposal.pctPagoFinal;
-  const splitValid  = splitTotal === 100;
 
   const splitAmounts = useMemo(() => {
     if (!precioValid) return null;
     return {
-      apartado:   Math.round(precio * proposal.pctApartado  / 100 * 100) / 100,
-      anticipo:   Math.round(precio * proposal.pctAnticipo  / 100 * 100) / 100,
-      pago_final: Math.round(precio * proposal.pctPagoFinal / 100 * 100) / 100,
+      apartado:   Math.round(precio * DEFAULT_SPLIT.apartado  / 100 * 100) / 100,
+      anticipo:   Math.round(precio * DEFAULT_SPLIT.anticipo  / 100 * 100) / 100,
+      pago_final: Math.round(precio * DEFAULT_SPLIT.pago_final / 100 * 100) / 100,
     };
-  }, [precio, precioValid, proposal.pctApartado, proposal.pctAnticipo, proposal.pctPagoFinal]);
+  }, [precio, precioValid]);
 
   function set(key, val) { onChange(index, { ...proposal, [key]: val }); }
-
-  function setPct(key, val) {
-    const n = Math.max(0, Math.min(100, parseInt(val) || 0));
-    const updated = { ...proposal, [key]: n };
-    if (key === "pctApartado")  updated.pctPagoFinal = Math.max(0, 100 - n - updated.pctAnticipo);
-    if (key === "pctAnticipo")  updated.pctPagoFinal = Math.max(0, 100 - updated.pctApartado - n);
-    if (key === "pctPagoFinal") updated.pctAnticipo  = Math.max(0, 100 - updated.pctApartado - n);
-    onChange(index, updated);
-  }
 
   const labelNum = ["①", "②", "③"][index] ?? `${index + 1}`;
 
@@ -127,7 +112,7 @@ function ProposalCard({ index, proposal, onChange, onRemove, canRemove, seguro }
       )}
 
       {/* Split preview */}
-      {splitAmounts && !proposal.splitOpen && (
+      {splitAmounts && (
         <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "0.625rem 0.75rem", marginBottom: "0.5rem" }}>
           <p style={{ margin: "0 0 0.375rem", fontSize: "0.68rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Desglose (20 / 40 / 40 %)
@@ -143,51 +128,6 @@ function ProposalCard({ index, proposal, onChange, onRemove, canRemove, seguro }
         </div>
       )}
 
-      {/* Split toggle */}
-      <button
-        type="button"
-        onClick={() => set("splitOpen", !proposal.splitOpen)}
-        style={{ background: "none", border: "none", fontSize: "0.78rem", color: "#1e5a9e", fontWeight: 600, cursor: "pointer", padding: "0.25rem 0", marginBottom: "0.5rem" }}
-      >
-        {proposal.splitOpen ? "▲ Ocultar desglose" : "▼ Ajustar desglose de pagos"}
-      </button>
-
-      {/* Split override */}
-      {proposal.splitOpen && (
-        <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: "0.75rem", background: "#fff", marginBottom: "0.5rem" }}>
-          <p style={{ margin: "0 0 0.5rem", fontSize: "0.72rem", color: "#94a3b8" }}>
-            Los porcentajes deben sumar 100%.{" "}
-            {!splitValid && <span style={{ color: "#dc2626" }}>Actualmente: {splitTotal}%</span>}
-            {splitValid && <span style={{ color: "#16a34a" }}>✓ 100%</span>}
-          </p>
-          {[
-            ["Apartado (reserva)", "pctApartado", proposal.pctApartado],
-            ["Anticipo (recolección)", "pctAnticipo", proposal.pctAnticipo],
-            ["Pago a la llegada", "pctPagoFinal", proposal.pctPagoFinal],
-          ].map(([lbl, key, pct]) => {
-            const amount = Math.round((parseFloat(proposal.precio_total) || 0) * pct / 100 * 100) / 100;
-            return (
-              <div key={key} style={{ marginBottom: "0.5rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.25rem" }}>
-                  <span style={{ fontSize: "0.8rem", color: "#374151", flex: 1, minWidth: "8rem" }}>{lbl}</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", flexShrink: 0 }}>
-                    <input
-                      type="number" min="0" max="100" value={pct}
-                      onChange={(e) => setPct(key, e.target.value)}
-                      style={{ width: 52, textAlign: "center", padding: "3px 6px", border: "1.5px solid #e2e8f0", borderRadius: 6, fontSize: "0.8rem", fontFamily: "inherit" }}
-                    />
-                    <span style={{ fontSize: "0.8rem", color: "#64748b" }}>%</span>
-                    {precioValid && <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1e293b", minWidth: 70, textAlign: "right" }}>{fmtMXN(amount)}</span>}
-                  </div>
-                </div>
-                <div style={{ background: "#e2e8f0", borderRadius: 4, height: 4 }}>
-                  <div style={{ background: "#1e5a9e", borderRadius: 4, height: 4, width: `${Math.min(100, pct)}%`, transition: "width 0.2s" }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
@@ -239,20 +179,14 @@ export default function LeadDetail() {
         const precio = parseFloat(proposal.precio_total);
         if (isNaN(precio) || precio < 0) throw new Error(`Precio inválido en "${proposal.nombre_propuesta}".`);
 
-        const splitTotal = proposal.pctApartado + proposal.pctAnticipo + proposal.pctPagoFinal;
-        if (proposal.splitOpen && splitTotal !== 100) throw new Error(`Los porcentajes de "${proposal.nombre_propuesta}" deben sumar 100%.`);
-
         const body = {
           precio_total:      precio,
           nombre_propuesta:  proposal.nombre_propuesta.trim() || null,
           notas:             mensajeCliente.trim() || null,
+          apartado:   Math.round(precio * DEFAULT_SPLIT.apartado   / 100 * 100) / 100,
+          anticipo:   Math.round(precio * DEFAULT_SPLIT.anticipo   / 100 * 100) / 100,
+          pago_final: Math.round(precio * DEFAULT_SPLIT.pago_final / 100 * 100) / 100,
         };
-
-        if (proposal.splitOpen) {
-          body.apartado   = Math.round(precio * proposal.pctApartado  / 100 * 100) / 100;
-          body.anticipo   = Math.round(precio * proposal.pctAnticipo  / 100 * 100) / 100;
-          body.pago_final = Math.round(precio * proposal.pctPagoFinal / 100 * 100) / 100;
-        }
 
         await submitQuote(id, body);
       }
@@ -478,13 +412,13 @@ export default function LeadDetail() {
               {/* Message to client */}
               <div style={{ marginBottom: "1rem" }}>
                 <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.375rem" }}>
-                  Mensaje al cliente <span style={{ color: "#94a3b8", textTransform: "none", fontWeight: 400 }}>(opcional)</span>
+                  Notas <span style={{ color: "#94a3b8", textTransform: "none", fontWeight: 400 }}>(Utiliza este espacio para )</span>
                 </label>
                 <textarea
                   value={mensajeCliente}
                   onChange={(e) => setMensajeCliente(e.target.value)}
                   rows={3}
-                  placeholder="¡Escribe por qué tu propuesta es la mejor! Experiencia, puntualidad, confianza…"
+                  placeholder="Comentarios opcionales para el cliente"
                   style={{
                     width: "100%", boxSizing: "border-box", padding: "0.625rem 0.75rem",
                     fontSize: "0.875rem", border: "1.5px solid #e2e8f0", borderRadius: 8,
