@@ -97,7 +97,8 @@ export default function CotizadasDetail() {
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="px-4 py-3 font-semibold text-gray-700">Proveedor</th>
-                <th className="px-4 py-3 font-semibold text-gray-700">Precio</th>
+                <th className="px-4 py-3 font-semibold text-gray-700">Total cliente</th>
+                <th className="px-4 py-3 font-semibold text-gray-700">Proveedor recibe</th>
                 <th className="px-4 py-3 font-semibold text-gray-700">✓ Seleccionada</th>
                 <th className="px-4 py-3 font-semibold text-gray-700">Acciones</th>
               </tr>
@@ -118,8 +119,13 @@ export default function CotizadasDetail() {
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {quote.provider?.nombre ?? "—"}
                     </td>
-                    <td className="px-4 py-3 text-gray-700">
+                    <td className="px-4 py-3 text-gray-700 font-semibold text-green-700">
                       ${Number(quote.precio_total ?? 0).toLocaleString("es-MX")}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {quote.precio_proveedor != null
+                        ? "$" + (Number(quote.precio_proveedor) + Number(quote.tarifa_seguro ?? 0)).toLocaleString("es-MX")
+                        : "—"}
                     </td>
                     <td className="px-4 py-3">
                       {quote.seleccionada ? (

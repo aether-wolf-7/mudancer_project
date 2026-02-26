@@ -13,40 +13,74 @@ function fmtMXN(val) {
   return "$" + Number(val).toLocaleString("es-MX", { minimumFractionDigits: 2 });
 }
 
-// ── Default split ─────────────────────────────────────────────────────────────
-const DEFAULT_SPLIT = { apartado: 20, anticipo: 40, pago_final: 40 };
+// ── Commission table ──────────────────────────────────────────────────────────
+function calcCommission(price) {
+  if (price <= 5000)   return 1500;
+  if (price <= 10000)  return 2000;
+  if (price <= 15000)  return 2500;
+  if (price <= 20000)  return 3000;
+  if (price <= 25000)  return 3500;
+  if (price <= 30000)  return 4000;
+  if (price <= 35000)  return 4500;
+  if (price <= 40000)  return 5000;
+  if (price <= 45000)  return 5500;
+  if (price <= 50000)  return 6000;
+  if (price <= 55000)  return 6500;
+  if (price <= 60000)  return 7000;
+  if (price <= 65000)  return 7500;
+  if (price <= 70000)  return 8000;
+  if (price <= 75000)  return 8500;
+  if (price <= 80000)  return 9000;
+  if (price <= 85000)  return 9500;
+  if (price <= 90000)  return 10000;
+  if (price <= 95000)  return 10500;
+  if (price <= 100000) return 11000;
+  if (price <= 110000) return 12000;
+  if (price <= 120000) return 12500;
+  if (price <= 130000) return 15000;
+  if (price <= 150000) return 18000;
+  if (price <= 200000) return 25000;
+  if (price <= 300000) return 30000;
+  if (price <= 400000) return 40000;
+  if (price <= 500000) return 45000;
+  return 50000;
+}
 
-const PROPOSAL_NAMES = [
-  "Servicio Exclusivo",
-  "Servicio Compartido",
-  "Servicio Especial",
-];
+function calcQuote(precioProveedor, seguro) {
+  const comision     = calcCommission(precioProveedor);
+  const tarifaSeguro = seguro > 0 ? Math.round(seguro * 0.015 * 100) / 100 : 0;
+  const precioTotal  = Math.round((precioProveedor + comision + tarifaSeguro) * 100) / 100;
+  const apartado     = comision;
+  const mitad        = Math.round(((precioProveedor + tarifaSeguro) / 2) * 100) / 100;
+  const anticipo     = mitad;
+  const pagoFinal    = Math.round((precioTotal - apartado - mitad) * 100) / 100;
+  return { comision, tarifaSeguro, precioTotal, apartado, anticipo, pagoFinal };
+}
+
+const PROPOSAL_NAMES = ["Servicio Exclusivo", "Servicio Compartido"];
+const MAX_PROPOSALS = 2;
 
 function makeProposal(index) {
   return {
     nombre_propuesta: PROPOSAL_NAMES[index] ?? `Propuesta ${index + 1}`,
-    precio_total: "",
+    precio_proveedor: "",
     notas: "",
   };
 }
 
 // ── Single proposal card ──────────────────────────────────────────────────────
 function ProposalCard({ index, proposal, onChange, onRemove, canRemove, seguro }) {
-  const precio      = parseFloat(proposal.precio_total);
+  const precio      = parseFloat(proposal.precio_proveedor);
   const precioValid = !isNaN(precio) && precio > 0;
 
-  const splitAmounts = useMemo(() => {
+  const calc = useMemo(() => {
     if (!precioValid) return null;
-    return {
-      apartado:   Math.round(precio * DEFAULT_SPLIT.apartado  / 100 * 100) / 100,
-      anticipo:   Math.round(precio * DEFAULT_SPLIT.anticipo  / 100 * 100) / 100,
-      pago_final: Math.round(precio * DEFAULT_SPLIT.pago_final / 100 * 100) / 100,
-    };
-  }, [precio, precioValid]);
+    return calcQuote(precio, seguro ?? 0);
+  }, [precio, precioValid, seguro]);
 
   function set(key, val) { onChange(index, { ...proposal, [key]: val }); }
 
-  const labelNum = ["①", "②", "③"][index] ?? `${index + 1}`;
+  const labelNum = ["①", "②"][index] ?? `${index + 1}`;
 
   return (
     <div style={{
@@ -90,43 +124,89 @@ function ProposalCard({ index, proposal, onChange, onRemove, canRemove, seguro }
       {/* Price */}
       <div style={{ marginBottom: "0.75rem" }}>
         <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.25rem" }}>
-          Precio Total *
+          Tu precio por el servicio (sin comisión) *
         </label>
         <input
           type="number"
           step="0.01"
           min="0"
-          value={proposal.precio_total}
-          onChange={(e) => set("precio_total", e.target.value)}
+          value={proposal.precio_proveedor}
+          onChange={(e) => set("precio_proveedor", e.target.value)}
           placeholder="0.00"
           required
           style={{ width: "100%", boxSizing: "border-box", padding: "0.5rem 0.75rem", fontSize: "0.9375rem", border: "1.5px solid #e2e8f0", borderRadius: 8, fontFamily: "inherit", color: "#1e293b", background: "#fff", outline: "none" }}
         />
+        <p style={{ margin: "0.3rem 0 0", fontSize: "0.72rem", color: "#94a3b8" }}>
+          La comisión de mudancer.com se calculará automáticamente.
+        </p>
       </div>
 
-      {/* Insurance info */}
-      {seguro > 0 && (
-        <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8, padding: "0.625rem 0.75rem", fontSize: "0.8rem", marginBottom: "0.75rem", color: "#1d4ed8" }}>
-          💼 Seguro: <strong>{fmtMXN(seguro)}</strong> declarado → tarifa estimada <strong>{fmtMXN(seguro * 0.015)}</strong> (1.5%)
-        </div>
-      )}
+      {/* Quote preview */}
+      {calc && (
+        <div style={{ background: "#fff", border: "1.5px solid #bbf7d0", borderRadius: 10, padding: "0.75rem", marginBottom: "0.75rem" }}>
+          <p style={{ margin: "0 0 0.5rem", fontSize: "0.68rem", color: "#15803d", textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
+            Resumen de la cotización
+          </p>
 
-      {/* Split preview */}
-      {splitAmounts && (
-        <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 8, padding: "0.625rem 0.75rem", marginBottom: "0.5rem" }}>
-          <p style={{ margin: "0 0 0.375rem", fontSize: "0.68rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Desglose (20 / 40 / 40 %)
+          {/* Totals */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#374151" }}>
+              <span>Tu precio</span>
+              <span>{fmtMXN(precio)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#374151" }}>
+              <span>Comisión mudancer.com</span>
+              <span style={{ color: "#d97706" }}>+ {fmtMXN(calc.comision)}</span>
+            </div>
+            {calc.tarifaSeguro > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", color: "#374151" }}>
+                <span>Tarifa de seguro (1.5%)</span>
+                <span style={{ color: "#1d4ed8" }}>+ {fmtMXN(calc.tarifaSeguro)}</span>
+              </div>
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", fontWeight: 800, color: "#15803d", borderTop: "1px solid #e2e8f0", paddingTop: 4, marginTop: 2 }}>
+              <span>Total al cliente</span>
+              <span>{fmtMXN(calc.precioTotal)}</span>
+            </div>
+          </div>
+
+          {/* Payment breakdown */}
+          <p style={{ margin: "0 0 0.375rem", fontSize: "0.65rem", color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Calendario de pagos del cliente
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "0.25rem", textAlign: "center" }}>
-            {[["Apartado", splitAmounts.apartado], ["Anticipo", splitAmounts.anticipo], ["Al llegar", splitAmounts.pago_final]].map(([lbl, v]) => (
-              <div key={lbl}>
-                <p style={{ margin: 0, fontSize: "0.65rem", color: "#94a3b8" }}>{lbl}</p>
-                <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 700, color: "#1e293b" }}>{fmtMXN(v)}</p>
+            {[
+              ["Apartado", calc.apartado, "#d97706"],
+              ["Anticipo", calc.anticipo, "#1d4ed8"],
+              ["Al llegar", calc.pagoFinal, "#15803d"],
+            ].map(([lbl, v, clr]) => (
+              <div key={lbl} style={{ background: "#f8fafc", borderRadius: 8, padding: "4px 2px" }}>
+                <p style={{ margin: 0, fontSize: "0.62rem", color: "#94a3b8" }}>{lbl}</p>
+                <p style={{ margin: 0, fontSize: "0.78rem", fontWeight: 700, color: clr }}>{fmtMXN(v)}</p>
               </div>
             ))}
           </div>
         </div>
       )}
+
+      {/* Per-proposal notes */}
+      <div>
+        <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.3rem" }}>
+          Nota de esta propuesta <span style={{ color: "#94a3b8", textTransform: "none", fontWeight: 400 }}>(opcional)</span>
+        </label>
+        <textarea
+          value={proposal.notas}
+          onChange={(e) => set("notas", e.target.value)}
+          rows={2}
+          placeholder="Condiciones especiales, restricciones, aclaraciones para el cliente…"
+          style={{
+            width: "100%", boxSizing: "border-box", padding: "0.5rem 0.75rem",
+            fontSize: "0.875rem", border: "1.5px solid #e2e8f0", borderRadius: 8,
+            fontFamily: "inherit", color: "#1e293b", resize: "vertical",
+            outline: "none", minHeight: 60, background: "#fff",
+          }}
+        />
+      </div>
 
     </div>
   );
@@ -144,7 +224,6 @@ export default function LeadDetail() {
 
   // Multi-proposal state
   const [proposals, setProposals] = useState([makeProposal(0)]);
-  const [mensajeCliente, setMensajeCliente] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -161,7 +240,7 @@ export default function LeadDetail() {
   }
 
   function addProposal() {
-    if (proposals.length < 3) setProposals((prev) => [...prev, makeProposal(prev.length)]);
+    if (proposals.length < MAX_PROPOSALS) setProposals((prev) => [...prev, makeProposal(prev.length)]);
   }
 
   function removeProposal(index) {
@@ -176,16 +255,13 @@ export default function LeadDetail() {
 
     try {
       for (const proposal of proposals) {
-        const precio = parseFloat(proposal.precio_total);
-        if (isNaN(precio) || precio < 0) throw new Error(`Precio inválido en "${proposal.nombre_propuesta}".`);
+        const precio = parseFloat(proposal.precio_proveedor);
+        if (isNaN(precio) || precio <= 0) throw new Error(`Precio inválido en "${proposal.nombre_propuesta}".`);
 
         const body = {
-          precio_total:      precio,
+          precio_proveedor:  precio,
           nombre_propuesta:  proposal.nombre_propuesta.trim() || null,
-          notas:             mensajeCliente.trim() || null,
-          apartado:   Math.round(precio * DEFAULT_SPLIT.apartado   / 100 * 100) / 100,
-          anticipo:   Math.round(precio * DEFAULT_SPLIT.anticipo   / 100 * 100) / 100,
-          pago_final: Math.round(precio * DEFAULT_SPLIT.pago_final / 100 * 100) / 100,
+          notas:             proposal.notas.trim() || null,
         };
 
         await submitQuote(id, body);
@@ -193,7 +269,6 @@ export default function LeadDetail() {
 
       setSent(true);
       setProposals([makeProposal(0)]);
-      setMensajeCliente("");
       setLead((prev) => prev ? { ...prev, my_quotes_count: (prev.my_quotes_count ?? 0) + proposals.length, can_quote: false, supplier_state: "cotizada" } : null);
     } catch (err) {
       setSubmitError(err.response?.data?.message || err.message || "Error al enviar cotización");
@@ -372,10 +447,10 @@ export default function LeadDetail() {
           <form onSubmit={handleSubmit}>
             <div className="ld-section" style={{ marginBottom: "1rem" }}>
               <h2 style={{ margin: "0 0 0.25rem", fontWeight: 700, fontSize: "0.875rem", color: "#1e293b", letterSpacing: "0.01em" }}>
-                Cotizar — Envía hasta 3 propuestas
+                Cotizar — Envía hasta 2 propuestas
               </h2>
               <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "#94a3b8" }}>
-                Puedes enviar una o varias opciones. Ej: Servicio Exclusivo, Compartido o Especial.
+                Puedes enviar una o dos opciones. Ej: Servicio Exclusivo o Servicio Compartido.
               </p>
 
               {/* Proposals */}
@@ -394,7 +469,7 @@ export default function LeadDetail() {
               </div>
 
               {/* Add proposal button */}
-              {proposals.length < 3 && (
+              {proposals.length < MAX_PROPOSALS && (
                 <button
                   type="button"
                   onClick={addProposal}
@@ -405,28 +480,9 @@ export default function LeadDetail() {
                     marginBottom: "1rem", transition: "background 0.15s",
                   }}
                 >
-                  + Agregar propuesta ({proposals.length}/3)
+                  + Agregar segunda propuesta ({proposals.length}/{MAX_PROPOSALS})
                 </button>
               )}
-
-              {/* Message to client */}
-              <div style={{ marginBottom: "1rem" }}>
-                <label style={{ display: "block", fontSize: "0.72rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.375rem" }}>
-                  Notas <span style={{ color: "#94a3b8", textTransform: "none", fontWeight: 400 }}>(Utiliza este espacio para )</span>
-                </label>
-                <textarea
-                  value={mensajeCliente}
-                  onChange={(e) => setMensajeCliente(e.target.value)}
-                  rows={3}
-                  placeholder="Comentarios opcionales para el cliente"
-                  style={{
-                    width: "100%", boxSizing: "border-box", padding: "0.625rem 0.75rem",
-                    fontSize: "0.875rem", border: "1.5px solid #e2e8f0", borderRadius: 8,
-                    fontFamily: "inherit", color: "#1e293b", resize: "vertical",
-                    outline: "none", minHeight: 72,
-                  }}
-                />
-              </div>
 
               {/* Submit error */}
               {submitError && (

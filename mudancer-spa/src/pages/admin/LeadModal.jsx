@@ -87,6 +87,150 @@ function Input({ value, onChange, name, type = "text", placeholder = "", require
   );
 }
 
+// ── Date input: manual DD/MM/YYYY + calendar picker ─────────────────────────
+function DateInput({ name, value, onChange }) {
+  const pickerRef = useRef(null);
+
+  function isoToDisplay(iso) {
+    if (!iso) return "";
+    const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+  }
+
+  const [display, setDisplay] = useState(() => isoToDisplay(value));
+  const [error, setError]     = useState("");
+
+  useEffect(() => {
+    setDisplay(isoToDisplay(value));
+    setError("");
+  }, [value]);
+
+  function validateAndEmit(raw) {
+    const m = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return false;
+    const [, dd, mm, yyyy] = m;
+    const d = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    if (
+      d.getFullYear() !== Number(yyyy) ||
+      d.getMonth()    !== Number(mm) - 1 ||
+      d.getDate()     !== Number(dd)
+    ) return false;
+    onChange({ target: { name, value: `${yyyy}-${mm}-${dd}` } });
+    return true;
+  }
+
+  function handleChange(e) {
+    let raw = e.target.value.replace(/[^\d/]/g, "");
+
+    // Auto-insert slashes at positions 2 and 5
+    if (/^\d{2}$/.test(raw) && display.length < raw.length) raw += "/";
+    if (/^\d{2}\/\d{2}$/.test(raw) && display.length < raw.length) raw += "/";
+
+    setDisplay(raw);
+    setError("");
+
+    if (raw === "") {
+      onChange({ target: { name, value: "" } });
+    } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) {
+      validateAndEmit(raw);
+    }
+  }
+
+  function handleBlur() {
+    if (!display) { setError(""); return; }
+    if (!/^\d{2}\/\d{2}\/\d{4}$/.test(display)) {
+      setError("Formato inválido — use DD/MM/AAAA");
+    } else if (!validateAndEmit(display)) {
+      setError("Fecha inválida");
+    }
+  }
+
+  function openPicker() {
+    if (pickerRef.current) {
+      pickerRef.current.showPicker?.();
+      pickerRef.current.click?.();
+    }
+  }
+
+  function handlePickerChange(e) {
+    const iso = e.target.value;
+    if (iso) {
+      onChange({ target: { name, value: iso } });
+    }
+  }
+
+  const isoValue = (() => {
+    if (!value) return "";
+    const m = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? value : "";
+  })();
+
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={display}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          placeholder="DD/MM/AAAA"
+          maxLength={10}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: "8px 10px",
+            border: `1px solid ${error ? "#ef4444" : "#e5e7eb"}`,
+            borderRadius: 8,
+            fontSize: 14,
+            color: "#111827",
+            outline: "none",
+            background: "#f9fafb",
+            boxSizing: "border-box",
+          }}
+        />
+        <input
+          ref={pickerRef}
+          type="date"
+          value={isoValue}
+          onChange={handlePickerChange}
+          title="Seleccionar fecha"
+          aria-label="Seleccionar fecha"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            opacity: 0,
+            pointerEvents: "none",
+          }}
+        />
+        <button
+          type="button"
+          onClick={openPicker}
+          title="Abrir calendario"
+          style={{
+            padding: "8px 12px",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            background: "#f9fafb",
+            color: "#6b7280",
+            cursor: "pointer",
+            fontSize: 16,
+            lineHeight: 1,
+          }}
+        >
+          📅
+        </button>
+      </div>
+      {error && (
+        <p style={{ margin: "3px 0 0", fontSize: 11, color: "#ef4444", fontWeight: 500 }}>
+          ⚠ {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Textarea({ value, onChange, name, rows = 3, placeholder = "" }) {
   return (
     <textarea
@@ -193,7 +337,7 @@ function buildClientWaUrl(lead) {
   const v  = (x) => x || "";
 
   const msg = [
-    `Buen día *${v(lead.nombre_cliente)}*, hemos recibido su solicitud de mudanza. Mi nombre es *Adrián Antonio y le atiendo personalmente.*`,
+    `👋 Buen día *${v(lead.nombre_cliente)}*, hemos recibido su solicitud de mudanza. Mi nombre es *Adrián Antonio y le atiendo personalmente.*`,
     ``,
     `👉 *¿Podrá verificar si está completa su lista?* Es importante que sea lo más detallado posible.`,
     `Si cuenta con fotos, nos sería de mucha ayuda para calcular mejor la carga.`,
@@ -202,22 +346,22 @@ function buildClientWaUrl(lead) {
     ``,
     `${v(lead.lead_id || lead.public_id)} | ${v(lead.nombre_cliente)}`,
     ``,
-    `Fecha ideal del servicio: ${v(lead.fecha_recoleccion)}`,
+    `🗓️ Fecha ideal del servicio: ${v(lead.fecha_recoleccion)}`,
     ``,
-    `Origen: ${[v(lead.localidad_origen), v(lead.estado_origen)].filter(Boolean).join(", ")}`,
+    `📍 Origen: ${[v(lead.localidad_origen), v(lead.estado_origen)].filter(Boolean).join(", ")}`,
     `Niveles o Piso: ${v(lead.piso_origen)}`,
     `Elevador: ${lead.elevador_origen !== undefined && lead.elevador_origen !== null ? yn(lead.elevador_origen) : ""}`,
     `Acarreo: ${v(lead.acarreo_origen)}`,
     ``,
-    `Destino: ${[v(lead.localidad_destino), v(lead.estado_destino)].filter(Boolean).join(", ")}`,
+    `📍 Destino: ${[v(lead.localidad_destino), v(lead.estado_destino)].filter(Boolean).join(", ")}`,
     `Niveles o Piso: ${v(lead.piso_destino)}`,
     `Elevador: ${lead.elevador_destino !== undefined && lead.elevador_destino !== null ? yn(lead.elevador_destino) : ""}`,
     `Acarreo: ${v(lead.acarreo_destino)}`,
-    `Inventario: ${v(lead.inventario)}`,
-    `Empaque: ${v(lead.empaque)}`,
-    `Objetos pesados y/o delicados: ${v(lead.articulos_delicados)}`,
+    `📦 Inventario: ${v(lead.inventario)}`,
+    `📦 Empaque: ${v(lead.empaque)}`,
+    `📦 Objetos pesados y/o delicados: ${v(lead.articulos_delicados)}`,
     ``,
-    `Modalidad del servicio: ${v(lead.modalidad)}`,
+    `🚚 Modalidad del servicio: ${v(lead.modalidad)}`,
     `Seguro: ${v(lead.seguro)}`,
     `Gracias.`,
   ].join("\n");
@@ -489,7 +633,7 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                 <FieldBlock label="City">
                   <Input name="localidad_origen" value={lead.localidad_origen} onChange={handleChange} />
                 </FieldBlock>
-                <FieldBlock label="Neighborhood">
+                <FieldBlock label="Colonia">
                   <Input name="colonia_origen" value={lead.colonia_origen} onChange={handleChange} />
                 </FieldBlock>
                 <FieldBlock label="Floor">
@@ -516,7 +660,7 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
                 <FieldBlock label="City">
                   <Input name="localidad_destino" value={lead.localidad_destino} onChange={handleChange} />
                 </FieldBlock>
-                <FieldBlock label="Neighborhood">
+                <FieldBlock label="Colonia">
                   <Input name="colonia_destino" value={lead.colonia_destino} onChange={handleChange} />
                 </FieldBlock>
                 <FieldBlock label="Floor">
@@ -542,10 +686,10 @@ export default function LeadModal({ leadId, onClose, onLeadUpdated }) {
 
               <div className="lm-grid-2">
                 <FieldBlock label="Fecha de Recolección">
-                  <Input name="fecha_recoleccion" type="date" value={lead.fecha_recoleccion ?? ""} onChange={handleChange} />
+                  <DateInput name="fecha_recoleccion" value={lead.fecha_recoleccion ?? ""} onChange={handleChange} />
                 </FieldBlock>
                 <FieldBlock label="Fecha de Llegada a Destino">
-                  <Input name="fecha_entrega" type="date" value={lead.fecha_entrega ?? ""} onChange={handleChange} />
+                  <DateInput name="fecha_entrega" value={lead.fecha_entrega ?? ""} onChange={handleChange} />
                 </FieldBlock>
                 <FieldBlock label="Horario estimado">
                   <Input name="tiempo_estimado" value={lead.tiempo_estimado} onChange={handleChange} placeholder="e.g. 3–6 días" />

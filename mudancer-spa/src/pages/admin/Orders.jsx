@@ -313,9 +313,16 @@ function OrderDetail({ order, onBack, onConcluded, onOrderUpdated }) {
             </p>
             <Stars value={p.reputacion} />
           </div>
-          <p style={{ fontWeight: 800, fontSize: 20, color: "#16a34a", margin: 0, flexShrink: 0 }}>
-            {fmtMoney(q.precio_total)}
-          </p>
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <p style={{ fontWeight: 800, fontSize: 20, color: "#16a34a", margin: "0 0 2px" }}>
+              {fmtMoney(q.precio_total)}
+            </p>
+            {q.precio_proveedor != null && (
+              <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>
+                Proveedor: {fmtMoney((Number(q.precio_proveedor) || 0) + (Number(q.tarifa_seguro) || 0))}
+              </p>
+            )}
+          </div>
         </div>
       )}
 

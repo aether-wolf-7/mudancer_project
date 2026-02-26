@@ -173,27 +173,57 @@ function QuoteModal({ quote, lead, onClose, onAssign }) {
 
           {/* Price breakdown */}
           <div style={{ borderRadius: 12, border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: 18 }}>
+            {/* Supplier price section */}
+            {quote.precio_proveedor != null && (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #f3f4f6", background: "#fff" }}>
+                  <span style={{ fontSize: 13, color: "#6b7280" }}>Precio proveedor</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>{fmtMoney(quote.precio_proveedor)}</span>
+                </div>
+                {quote.tarifa_seguro != null && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #f3f4f6", background: "#fff" }}>
+                    <span style={{ fontSize: 13, color: "#6b7280" }}>Tarifa de seguro</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#1d4ed8" }}>{fmtMoney(quote.tarifa_seguro)}</span>
+                  </div>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #f3f4f6", background: "#fafafa" }}>
+                  <span style={{ fontSize: 13, color: "#374151", fontWeight: 600 }}>
+                    Total proveedor recibe
+                  </span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#374151" }}>
+                    {fmtMoney((Number(quote.precio_proveedor) || 0) + (Number(quote.tarifa_seguro) || 0))}
+                  </span>
+                </div>
+                {quote.comision != null && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #f3f4f6", background: "#fff" }}>
+                    <span style={{ fontSize: 13, color: "#6b7280" }}>Comisión mudancer.com</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#d97706" }}>+ {fmtMoney(quote.comision)}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Customer total */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #f3f4f6", background: "#f0fdf4" }}>
+              <span style={{ fontSize: 13, color: "#6b7280", fontWeight: 600 }}>Precio total al cliente</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: "#16a34a" }}>{fmtMoney(quote.precio_total)}</span>
+            </div>
+
+            {/* Payment schedule */}
             {[
-              ["Precio total",       quote.precio_total,  true],
-              ["Apartado",           quote.apartado,      false],
-              ["Anticipo",           quote.anticipo,      false],
-              ["Pago a la llegada",  quote.pago_final,    false],
-              ["Tarifa de seguro",   quote.tarifa_seguro, false],
-            ].map(([label, val, bold]) => (
-              <div
-                key={label}
-                style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "10px 16px",
-                  borderBottom: "1px solid #f3f4f6",
-                  background: bold ? "#f0fdf4" : "#fff",
-                }}
-              >
-                <span style={{ fontSize: 13, color: "#6b7280", fontWeight: bold ? 600 : 400 }}>{label}</span>
-                <span style={{ fontSize: bold ? 17 : 14, fontWeight: bold ? 700 : 500, color: bold ? "#16a34a" : "#111827" }}>
-                  {val !== null && val !== undefined && val !== "" ? fmtMoney(val) : "—"}
-                </span>
-              </div>
+              ["Apartado",          quote.apartado,     false],
+              ["Anticipo",          quote.anticipo,     false],
+              ["Pago a la llegada", quote.pago_final,   false],
+            ].map(([label, val]) => (
+              val != null && (
+                <div
+                  key={label}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #f3f4f6", background: "#fff" }}
+                >
+                  <span style={{ fontSize: 13, color: "#6b7280" }}>{label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: "#111827" }}>{fmtMoney(val)}</span>
+                </div>
+              )
             ))}
           </div>
 

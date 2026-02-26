@@ -14,6 +14,7 @@ import ProveedorLeadDetail from "./pages/proveedor/LeadDetail";
 import Ordenes from "./pages/proveedor/Ordenes";
 import ProveedorPerfil from "./pages/proveedor/Perfil";
 import Cotizacion from "./pages/cotizacion/Cotizacion";
+import { PagoExitoso, PagoFallido, PagoPendiente } from "./pages/cotizacion/PagoResultado";
 import LeadRedirect from "./pages/LeadRedirect";
 
 function App() {
@@ -50,6 +51,9 @@ function App() {
       </Route>
 
       <Route path="/cotizacion" element={<Cotizacion />} />
+      <Route path="/cotizacion/pago-exitoso"   element={<PagoExitoso />} />
+      <Route path="/cotizacion/pago-fallido"   element={<PagoFallido />} />
+      <Route path="/cotizacion/pago-pendiente" element={<PagoPendiente />} />
 
       {/* Public lead deep-link: /leads/:leadId/:token → resolves to /proveedor/leads/:id */}
       <Route path="/leads/:leadId/:token" element={<LeadRedirect />} />
