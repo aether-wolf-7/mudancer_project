@@ -6,6 +6,7 @@ use App\Models\Lead;
 use App\Models\Provider;
 use App\Models\ProviderLeadView;
 use App\Models\Quote;
+use App\Services\QuotePricingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -212,17 +213,14 @@ class ProveedorController extends Controller
     /**
      * POST /api/proveedor/leads/{lead}/cotizar — submit quote.
      * Default split: apartado=20%, anticipo=40%, pago_final=40%.
-     * Provider may override by sending explicit apartado/anticipo/pago_final amounts.
+     * Commission is calculated from the supplier's price using a fixed table.
      */
     public function submitQuote(Request $request, Lead $lead): JsonResponse
     {
         $validated = $request->validate([
-            'precio_total'     => 'required|numeric|min:0',
+            'precio_proveedor' => 'required|numeric|min:0',
             'notas'            => 'nullable|string',
             'nombre_propuesta' => 'nullable|string|max:120',
-            'apartado'         => 'nullable|numeric|min:0',
-            'anticipo'         => 'nullable|numeric|min:0',
-            'pago_final'       => 'nullable|numeric|min:0',
         ]);
 
         $provider = $this->getProviderForUser();
@@ -230,30 +228,21 @@ class ProveedorController extends Controller
             return response()->json(['message' => 'Provider profile not found.'], 403);
         }
 
-        $precio = (float) $validated['precio_total'];
+        $precioProveedor = (float) $validated['precio_proveedor'];
+        $insuredValue    = $lead->seguro > 0 ? (float) $lead->seguro : null;
 
-        // Use explicit split if all three are provided; otherwise default percentages
-        $hasExplicitSplit = isset($validated['apartado'], $validated['anticipo'], $validated['pago_final']);
-        if ($hasExplicitSplit) {
-            $apartado  = round((float) $validated['apartado'],   2);
-            $anticipo  = round((float) $validated['anticipo'],   2);
-            $pagoFinal = round((float) $validated['pago_final'], 2);
-        } else {
-            $apartado  = round($precio * 0.2, 2);
-            $anticipo  = round($precio * 0.4, 2);
-            $pagoFinal = round($precio * 0.4, 2);
-        }
-
-        // Insurance fee: 1.5% of the declared insured value on the lead (not of the quote price)
-        $tarifaSeguro = ($lead->seguro > 0) ? round((float) $lead->seguro * 0.015, 2) : null;
+        $calc = QuotePricingService::calculateQuote($precioProveedor, $insuredValue);
+        $tarifaSeguro = $calc['tarifa_seguro'];
 
         $quote = Quote::create([
             'lead_id'          => $lead->id,
             'provider_id'      => $provider->id,
-            'precio_total'     => $precio,
-            'apartado'         => $apartado,
-            'anticipo'         => $anticipo,
-            'pago_final'       => $pagoFinal,
+            'precio_proveedor' => round($precioProveedor, 2),
+            'comision'         => $calc['comision'],
+            'precio_total'     => $calc['precio_total'],
+            'apartado'         => $calc['apartado'],
+            'anticipo'         => $calc['anticipo'],
+            'pago_final'       => $calc['pago_final'],
             'tarifa_seguro'    => $tarifaSeguro,
             'notas'            => $validated['notas'] ?? null,
             'nombre_propuesta' => $validated['nombre_propuesta'] ?? null,

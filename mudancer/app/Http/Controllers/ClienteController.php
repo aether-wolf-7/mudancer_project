@@ -52,17 +52,50 @@ class ClienteController extends Controller
         return response()->json([
             'status' => 'published',
             'lead'   => [
-                'id'               => $lead->id,
-                'lead_id'          => $lead->lead_id,
-                'public_token'     => $lead->public_token,
-                'nombre_cliente'   => $lead->nombre_cliente,
-                'estado_origen'    => $lead->estado_origen,
-                'localidad_origen' => $lead->localidad_origen,
-                'estado_destino'   => $lead->estado_destino,
-                'localidad_destino'=> $lead->localidad_destino,
-                'fecha_recoleccion'=> $lead->fecha_recoleccion,
-                'adjudicada'       => $lead->adjudicada,
-                'concluida'        => $lead->concluida,
+                'id'                  => $lead->id,
+                'lead_id'             => $lead->lead_id,
+                'public_token'        => $lead->public_token,
+
+                // Client info
+                'nombre_cliente'      => $lead->nombre_cliente,
+                'email_cliente'       => $lead->email_cliente,
+                'telefono_cliente'    => $lead->telefono_cliente,
+
+                // Origin
+                'estado_origen'       => $lead->estado_origen,
+                'localidad_origen'    => $lead->localidad_origen,
+                'colonia_origen'      => $lead->colonia_origen,
+                'piso_origen'         => $lead->piso_origen,
+                'elevador_origen'     => $lead->elevador_origen,
+                'acarreo_origen'      => $lead->acarreo_origen,
+
+                // Destination
+                'estado_destino'      => $lead->estado_destino,
+                'localidad_destino'   => $lead->localidad_destino,
+                'colonia_destino'     => $lead->colonia_destino,
+                'piso_destino'        => $lead->piso_destino,
+                'elevador_destino'    => $lead->elevador_destino,
+                'acarreo_destino'     => $lead->acarreo_destino,
+
+                // Service details
+                'fecha_recoleccion'   => $lead->fecha_recoleccion,
+                'fecha_entrega'       => $lead->fecha_entrega,
+                'tiempo_estimado'     => $lead->tiempo_estimado,
+                'modalidad'           => $lead->modalidad,
+                'empaque'             => $lead->empaque,
+                'seguro'              => $lead->seguro,
+
+                // Inventory & notes
+                'inventario'          => $lead->inventario,
+                'articulos_delicados' => $lead->articulos_delicados,
+                'observaciones'       => $lead->observaciones,
+
+                // Images (read-only)
+                'imagenes_urls'       => $lead->imagenes_urls ?? [],
+
+                // Status
+                'adjudicada'          => $lead->adjudicada,
+                'concluida'           => $lead->concluida,
             ],
             'quotes' => $lead->quotes->map(fn (Quote $q) => [
                 'id'                 => $q->id,
